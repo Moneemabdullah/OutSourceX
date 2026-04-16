@@ -4,20 +4,18 @@
     "moduleResolution": "bundler",
     "module": "esnext",
     "outDir": "./dist",
-    "rootDir": "./",
+    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "ignoreDeprecations": "5.0"
+    "ignoreDeprecations": "5.0",
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
-  "include": [
-    "src/**/*",
-    "prisma.config.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "prisma/migrations",
-  ]
+  "include": ["src/**/*", "prisma.config.ts"],
+  "exclude": ["node_modules", "dist", "prisma/migrations"]
 }

@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import status from 'http-status';
 import { z } from 'zod';
-import AppError from './error';
+import AppError from '../errorHelpers/AppError';
 
 dotenv.config();
 

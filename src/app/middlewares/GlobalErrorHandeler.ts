@@ -11,7 +11,7 @@ export const globalErrorHandler = async (
   err: any,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   if (envVars.NODE_ENV === 'development') {
     console.error(err);

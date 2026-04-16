@@ -1,4 +1,4 @@
-import app from './app';
+import app from './index';
 import { envVars } from './app/config/env.utils';
 
 const port = envVars.PORT;

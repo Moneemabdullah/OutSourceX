@@ -1,5 +1,3 @@
-import { Prisma } from '../../generated/prisma/client';
-
 export interface PrismaFindManyArguments {
   where?: Record<string, unknown>;
   include?: Record<string, unknown>;

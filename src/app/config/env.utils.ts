@@ -47,11 +47,6 @@ const envSchema = z.object({
 });
 
 /**
- * ✅ Type from Zod (auto-inferred)
- */
-type EnvConfig = z.infer<typeof envSchema>;
-
-/**
  * ✅ Load & Validate
  */
 const loadEnvVariable = () => {

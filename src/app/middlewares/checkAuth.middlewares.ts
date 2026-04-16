@@ -1,17 +1,16 @@
 import { NextFunction, Request, Response } from 'express';
 import status from 'http-status';
-import { Role, UserStatus } from '../../generated/prisma/enums';
+import { UserRole, UserStatus } from '../../generated/prisma/enums';
 
 import { envVars } from '../config/env.utils';
 import AppError from '../errorHelpers/AppError';
 import { prisma } from '../lib/prisma';
 import { cookieUtils } from '../utils/cookie';
 import { jwtUtils } from '../utils/jwt';
-import { role } from 'better-auth/client';
 
 export const CheckAuth =
-  (...authRoles: Role[]) =>
-  async (req: Request, res: Response, next: NextFunction) => {
+  (...authRoles: UserRole[]) =>
+  async (req: Request, _res: Response, next: NextFunction) => {
     try {
       const sessionToken = cookieUtils.getCookie(req, 'better-auth-session-token');
 
@@ -21,8 +20,8 @@ export const CheckAuth =
       if (sessionToken) {
         const sessionExists = await prisma.session.findFirst({
           where: {
-            token: sessionToken,
-            expiresAt: {
+            sessionToken: sessionToken,
+            expires: {
               gt: new Date(),
             },
           },
@@ -34,26 +33,10 @@ export const CheckAuth =
         if (sessionExists && sessionExists.user) {
           const user = sessionExists.user;
 
-          const now = new Date();
-          const expiresAt = new Date(sessionExists.expiresAt);
-          const createdAt = new Date(sessionExists.createdAt);
-
-          const sessionLifeTime = expiresAt.getTime() - createdAt.getTime();
-
-          const timeLeft = expiresAt.getTime() - now.getTime();
-
-          const percentageLeft = (timeLeft / sessionLifeTime) * 100;
-
-          if (percentageLeft < 20) {
-            res.setHeader('X-Session-Expiring', 'true');
-            res.setHeader('X-Session-Expires-At', expiresAt.toISOString());
-            res.setHeader('X-Time-remaining', timeLeft.toString());
-          }
-
-          if (user.status === UserStatus.BLOCKED || user.status !== UserStatus.DELETED) {
+          if (user.status === UserStatus.SUSPENDED) {
             throw new AppError(
               status.FORBIDDEN,
-              'Your account is blocked. Please contact support.'
+              'Your account is suspended. Please contact support.'
             );
           }
 
@@ -64,13 +47,13 @@ export const CheckAuth =
             );
           }
 
-          if (authRoles.length > 0 && !authRoles.includes(user.role as Role)) {
+          if (authRoles.length > 0 && !authRoles.includes(user.role as UserRole)) {
             throw new AppError(status.FORBIDDEN, 'Forbidden: Insufficient permissions');
           }
 
           req.user = {
             userId: user.id,
-            role: user.role as Role,
+            role: user.role as UserRole,
             email: user.email,
           };
         }
@@ -81,7 +64,6 @@ export const CheckAuth =
           throw new AppError(status.UNAUTHORIZED, 'Unauthorized access! No access token provided.');
         }
       }
-      //Access Token Verification
       const accessToken = cookieUtils.getCookie(req, 'accessToken');
 
       if (!accessToken) {
@@ -97,7 +79,12 @@ export const CheckAuth =
         throw new AppError(status.UNAUTHORIZED, 'Unauthorized access! Invalid access token.');
       }
 
-      if (authRoles.length > 0 && !authRoles.includes(verifiedToken.data!.role as Role)) {
+      if (
+        authRoles.length > 0 &&
+        verifiedToken.data &&
+        typeof verifiedToken.data !== 'string' &&
+        !authRoles.includes((verifiedToken.data as { role?: UserRole }).role as UserRole)
+      ) {
         throw new AppError(
           status.FORBIDDEN,
           'Forbidden access! You do not have permission to access this resource.'

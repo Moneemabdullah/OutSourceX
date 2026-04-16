@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Login</title>
+</head>
+
+<body>
+    <div class="">
+        <p>Redirecting To Google...</p>
+    </div>
+</body>
+<script>(
+        async () => {
+            try {
+                const response = await fetch("<%= betterAuthUrl %>/api/auth/sign-in/social", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    credentials: "include",
+                    body: JSON.stringify({
+                        provider: "google",
+                        callbackUrl: "<%= callbackUrl %>/api/auth/login-google"
+                    }),
+
+
+                });
+
+                const data = await response.json();
+
+                if (data.url) {
+                    window.location.href = data.url;
+                    return;
+                }
+                else {
+                    document.body.innerHTML = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="background: white; padding: 30px; border-radius: 8px;">
+                    <h2 style="color: #333; text-align: center; margin-top: 0;">OAuth Authentication Failed</h2>
+                    <p style="color: #666; font-size: 14px; text-align: center;">An error occurred during the authentication process. Please try again later.</p>
+                </div>`;
+                }
+
+            } catch (error) {
+                document.body.innerHTML = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="background: white; padding: 30px; border-radius: 8px;">
+                    <h2 style="color: #333; text-align: center; margin-top: 0;">OAuth Authentication Failed</h2>
+                    <p style="color: #666; font-size: 14px; text-align: center;">An error occurred during the authentication process. Please try again later.</p>
+                </div>`;
+            }
+        }
+    )()
+</script>
+
+</html>

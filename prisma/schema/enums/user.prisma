@@ -1,0 +1,12 @@
+enum UserRole {
+    SUPER_ADMIN
+    ADMIN
+    CLIENT
+    FREELANCER
+}
+
+enum UserStatus {
+    ACTIVE
+    INACTIVE
+    SUSPENDED
+}

@@ -1,0 +1,20 @@
+model Job {
+    id          String    @id @default(uuid())
+    title       String
+    description String?   @db.Text
+    budget      Float?    @default(0.0)
+    deadline    DateTime?
+
+    ownerID String @map("owner_id")
+    owner   Client @relation(fields: [ownerID], references: [id])
+
+    categoryID String      @map("category_id")
+    category   JobCategory @relation(fields: [categoryID], references: [id])
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    proposals  Proposal[]
+    contracts  Contract[]
+    milestones Milestone[]
+}

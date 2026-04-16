@@ -1,0 +1,14 @@
+model Milestone {
+    id              String          @id @default(uuid())
+    title           String
+    description     String?         @db.Text
+    amount          Float           @default(0.0)
+    dueDate         DateTime?
+    milestoneStatus MilestoneStatus @default(NOT_STARTED) @map("milestone_status")
+
+    jobID String @map("job_id")
+    job   Job    @relation(fields: [jobID], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+}

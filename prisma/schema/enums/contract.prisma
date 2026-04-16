@@ -1,0 +1,6 @@
+enum ContractStatus {
+    ACTIVE
+    COMPLETED
+    CANCELLED
+    DISPUTED
+}

@@ -1,0 +1,16 @@
+model Proposal {
+    id          String         @id @default(uuid())
+    coverLetter String         @db.Text
+    bidAmount   Float
+    status      ProposalStatus @default(PENDING)
+
+    freelancerID String     @map("freelancer_id")
+    freelancer   Freelancer @relation(fields: [freelancerID], references: [id])
+
+    jobID String @map("job_id")
+    job   Job    @relation(fields: [jobID], references: [id])
+
+    contract Contract?
+
+    createdAt DateTime @default(now()) @map("created_at")
+}

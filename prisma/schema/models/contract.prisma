@@ -1,0 +1,22 @@
+model Contract {
+    id          String  @id @default(uuid(7))
+    title       String
+    description String? @db.Text
+
+    jobID String @map("job_id")
+    job   Job    @relation(fields: [jobID], references: [id])
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    freelancerID String     @map("freelancer_id")
+    freelancer   Freelancer @relation(fields: [freelancerID], references: [id])
+
+    clientID String @map("client_id")
+    client   Client @relation(fields: [clientID], references: [id])
+
+    proposalID String   @unique @map("proposal_id")
+    proposal   Proposal @relation(fields: [proposalID], references: [id])
+
+    payment Payment?
+}

@@ -1,0 +1,13 @@
+model Payment {
+    id                 String        @id @default(uuid(7))
+    amount             Float
+    transactionId      String        @unique @db.Uuid()
+    stripeEventId      String?       @unique
+    status             PaymentStatus @default(PENDING)
+    paymentGatewayData Json?
+    createdAt          DateTime      @default(now())
+    updatedAt          DateTime      @updatedAt
+
+    contractID String   @unique @map("contract_id")
+    contract   Contract @relation(fields: [contractID], references: [id])
+}

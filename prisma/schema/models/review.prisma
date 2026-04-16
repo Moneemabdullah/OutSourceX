@@ -1,0 +1,13 @@
+model Review {
+    id      String  @id @default(uuid(7))
+    rating  Float   @default(0.0)
+    comment String? @db.Text
+
+    freelancerID String     @map("freelancer_id")
+    freelancer   Freelancer @relation(fields: [freelancerID], references: [id])
+
+    clientID String @map("client_id")
+    client   Client @relation(fields: [clientID], references: [id])
+
+    createdAt DateTime @default(now()) @map("created_at")
+}

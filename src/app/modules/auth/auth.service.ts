@@ -1,12 +1,16 @@
-import AppError from '@/app/errorHelpers/AppError';
-import { IRequestUser } from '@/app/interfaces/requestUser.interface';
-import { auth } from '@/app/lib/auth';
-import { prisma } from '@/app/lib/prisma';
-import { sendEmail } from '@/app/utils/emailService';
-import { tokenUtils } from '@/app/utils/token';
-import { UserRole, UserStatus } from '@/generated/prisma/enums';
 import httpStatus from 'http-status';
 import { ILoginUser, IRegisterUser } from './user.interface';
+import { UserRole, UserStatus } from '../../../generated/prisma/enums';
+import { tokenUtils } from '../../utils/token';
+import { auth } from '../../lib/auth';
+import AppError from '../../errorHelpers/AppError';
+import { sendEmail } from '../../utils/emailService';
+import { IRequestUser } from '../../interfaces/requestUser.interface';
+import { prisma } from '../../lib/prisma';
+import { Prisma } from '../../../generated/prisma/browser';
+import { createLogger } from '../../lib/logger';
+
+const authLogger = createLogger('AuthService');
 
 type TAuthUser = {
   id: string;
@@ -34,21 +38,34 @@ const issueTokens = (user: TAuthUser) => {
   };
 };
 
-const ensureAccountProfile = async (userId: string, role: UserRole) => {
-  if (role === UserRole.CLIENT) {
-    const client = await prisma.client.findFirst({ where: { userID: userId } });
+const ensureAccountProfile = async (
+  tx: Prisma.TransactionClient,
+  userId: string,
+  role: UserRole
+) => {
+  const user = await tx.user.findUnique({
+    where: { id: userId },
+  });
 
-    if (!client) {
-      await prisma.client.create({ data: { userID: userId } });
-    }
+  if (!user) {
+    authLogger.error('User not found in database during profile creation', { userId });
+    throw new AppError(400, 'User not found in database (sync issue)');
+  }
+
+  if (role === UserRole.CLIENT) {
+    await tx.client.upsert({
+      where: { userID: userId },
+      update: {},
+      create: { userID: userId },
+    });
   }
 
   if (role === UserRole.FREELANCER) {
-    const freelancer = await prisma.freelancer.findFirst({ where: { userID: userId } });
-
-    if (!freelancer) {
-      await prisma.freelancer.create({ data: { userID: userId } });
-    }
+    await tx.freelancer.upsert({
+      where: { userID: userId },
+      update: {},
+      create: { userID: userId },
+    });
   }
 };
 
@@ -66,21 +83,45 @@ const registerUser = async (payload: IRegisterUser) => {
     throw new AppError(httpStatus.BAD_REQUEST, 'Failed to register user');
   }
 
-  await ensureAccountProfile(response.user.id, response.user.role);
+  const dbUser = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.upsert({
+      where: { id: response.user!.id },
+      update: {},
+      create: {
+        id: response.user!.id,
+        email: response.user!.email,
+        name: response.user!.name,
+        role: response.user!.role,
+      },
+    });
+
+    await ensureAccountProfile(tx, user.id, user.role);
+    return user;
+  });
 
   await sendEmail({
-    to: response.user.email,
+    to: dbUser.email,
     subject: 'Welcome to OutsourceX',
     template: 'welcome',
     templateData: {
-      name: response.user.name,
-      role: response.user.role,
+      name: dbUser.name,
+      role: dbUser.role,
     },
   });
 
+  const tokenUser: TAuthUser = {
+    id: dbUser.id,
+    email: dbUser.email,
+    name: dbUser.name || '',
+    role: dbUser.role,
+    status: dbUser.status,
+    isDeleted: dbUser.isDeleted,
+    emailVerified: dbUser.emailVerified,
+  };
+
   return {
-    user: response.user,
-    ...issueTokens(response.user),
+    user: dbUser,
+    ...issueTokens(tokenUser),
   };
 };
 
@@ -100,7 +141,9 @@ const loginUser = async (payload: ILoginUser) => {
     throw new AppError(httpStatus.FORBIDDEN, 'This account is not allowed to sign in');
   }
 
-  await ensureAccountProfile(response.user.id, response.user.role);
+  await prisma.$transaction(async (tx) => {
+    await ensureAccountProfile(tx, response.user!.id, response.user!.role);
+  });
 
   return {
     user: response.user,

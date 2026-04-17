@@ -1,8 +1,8 @@
-import AppError from '@/app/errorHelpers/AppError';
-import { IRequestUser } from '@/app/interfaces/requestUser.interface';
-import { prisma } from '@/app/lib/prisma';
-import { UserRole } from '@/generated/prisma/enums';
 import httpStatus from 'http-status';
+import { prisma } from '../../lib/prisma';
+import AppError from '../../errorHelpers/AppError';
+import { IRequestUser } from '../../interfaces/requestUser.interface';
+import { UserRole } from '../../../generated/prisma/enums';
 
 const resolveExpertiseId = async (payload: { expertiseId?: string; expertiseTitle?: string }) => {
   if (payload.expertiseId) {

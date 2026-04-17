@@ -1,9 +1,9 @@
-import AppError from '@/app/errorHelpers/AppError';
-import { IRequestUser } from '@/app/interfaces/requestUser.interface';
-import { prisma } from '@/app/lib/prisma';
-import { notificationUtils } from '@/app/utils/notification';
-import { UserRole } from '@/generated/prisma/enums';
 import httpStatus from 'http-status';
+import { IRequestUser } from '../../interfaces/requestUser.interface';
+import { UserRole } from '../../../generated/prisma/enums';
+import { prisma } from '../../lib/prisma';
+import AppError from '../../errorHelpers/AppError';
+import { notificationUtils } from '../../utils/notification';
 
 const createReview = async (
   user: IRequestUser,

@@ -1,10 +1,10 @@
-import AppError from '@/app/errorHelpers/AppError';
-import { IQueryParams } from '@/app/interfaces/Query.interface';
-import { IRequestUser } from '@/app/interfaces/requestUser.interface';
-import { prisma } from '@/app/lib/prisma';
-import { QueryBuilder } from '@/app/utils/QueryBuilder';
-import { UserRole } from '@/generated/prisma/enums';
 import httpStatus from 'http-status';
+import { IRequestUser } from '../../interfaces/requestUser.interface';
+import { prisma } from '../../lib/prisma';
+import AppError from '../../errorHelpers/AppError';
+import { QueryBuilder } from '../../utils/QueryBuilder';
+import { IQueryParams } from '../../interfaces/Query.interface';
+import { UserRole } from '../../../generated/prisma/enums';
 
 const getMyAccount = async (user: IRequestUser) => {
   const account = await prisma.user.findUnique({

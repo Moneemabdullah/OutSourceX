@@ -1,6 +1,6 @@
-import AppError from '@/app/errorHelpers/AppError';
-import { prisma } from '@/app/lib/prisma';
 import httpStatus from 'http-status';
+import { prisma } from '../../lib/prisma';
+import AppError from '../../errorHelpers/AppError';
 
 const createCategory = async (payload: { title: string; description?: string }) => {
   const existingCategory = await prisma.jobCategory.findFirst({

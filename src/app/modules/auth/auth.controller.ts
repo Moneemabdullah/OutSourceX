@@ -1,10 +1,10 @@
-import catchAsync from '@/app/shared/catchAsync';
-import { sendResponse } from '@/app/shared/sendResponse';
-import { tokenUtils } from '@/app/utils/token';
-import AppError from '@/app/errorHelpers/AppError';
 import { Request, Response } from 'express';
 import status from 'http-status';
 import { authService } from './auth.service';
+import { sendResponse } from '../../shared/sendResponse';
+import { tokenUtils } from '../../utils/token';
+import catchAsync from '../../shared/catchAsync';
+import AppError from '../../errorHelpers/AppError';
 
 const registerUser = catchAsync(async (req: Request, res: Response) => {
   const result = await authService.registerUser(req.body);

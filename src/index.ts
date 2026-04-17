@@ -8,6 +8,8 @@ import path from 'node:path';
 import cors from 'cors';
 import { envVars } from './app/config/env.utils';
 import { indexRoute } from './app/routes';
+import { logger } from './app/lib/logger';
+import { requestLogger } from './app/middlewares/requestLogger';
 
 const app: Application = express();
 
@@ -23,9 +25,17 @@ app.use(
   })
 );
 
+logger.info(
+  'CORS configured with allowed origins: ' +
+    [envVars.FRONTEND_URL, envVars.BETTER_AUTH_URL].join(', ')
+);
+
+logger.info('Express app initialized');
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
+app.use(requestLogger);
 
 app.use('/api/auth', toNodeHandler(auth));
 

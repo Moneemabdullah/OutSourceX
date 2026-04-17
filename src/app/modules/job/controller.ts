@@ -1,10 +1,10 @@
-import AppError from '@/app/errorHelpers/AppError';
-import { IQueryParams } from '@/app/interfaces/Query.interface';
-import catchAsync from '@/app/shared/catchAsync';
-import { sendResponse } from '@/app/shared/sendResponse';
 import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import { jobService } from './service';
+import catchAsync from '../../shared/catchAsync';
+import AppError from '../../errorHelpers/AppError';
+import { sendResponse } from '../../shared/sendResponse';
+import { IQueryParams } from '../../interfaces/Query.interface';
 
 const createJob = catchAsync(async (req: Request, res: Response) => {
   if (!req.user) {

@@ -1,9 +1,9 @@
-import AppError from '@/app/errorHelpers/AppError';
-import { IQueryParams } from '@/app/interfaces/Query.interface';
-import { IRequestUser } from '@/app/interfaces/requestUser.interface';
-import { prisma } from '@/app/lib/prisma';
-import { QueryBuilder } from '@/app/utils/QueryBuilder';
 import httpStatus from 'http-status';
+import { prisma } from '../../lib/prisma';
+import AppError from '../../errorHelpers/AppError';
+import { IRequestUser } from '../../interfaces/requestUser.interface';
+import { IQueryParams } from '../../interfaces/Query.interface';
+import { QueryBuilder } from '../../utils/QueryBuilder';
 
 const getClientProfileId = async (userId: string) => {
   const client = await prisma.client.findFirst({

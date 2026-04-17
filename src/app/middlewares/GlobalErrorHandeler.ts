@@ -6,6 +6,7 @@ import AppError from '../errorHelpers/AppError';
 import { handleZodError } from '../errorHelpers/handleZodError';
 import { IErrorResponse, TErrorSource } from '../interfaces/error.interface';
 import { deleteFileFromCloudinary } from '../config/cloudinary.config';
+import { logger } from '../lib/logger';
 
 export const globalErrorHandler = async (
   err: any,
@@ -13,17 +14,44 @@ export const globalErrorHandler = async (
   res: Response,
   _next: NextFunction
 ) => {
-  if (envVars.NODE_ENV === 'development') {
-    console.error(err);
+  if (err instanceof AppError) {
+    logger.warn(
+      {
+        statusCode: err.statusCode,
+        message: err.message,
+        path: req.path,
+        method: req.method,
+      },
+      'AppError occurred'
+    );
+  } else if (err instanceof z.ZodError) {
+    logger.warn(
+      {
+        errors: err.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+        path: req.path,
+        method: req.method,
+      },
+      'Zod validation error'
+    );
+  } else {
+    logger.error(
+      {
+        error: err?.message || err,
+        stack: envVars.NODE_ENV === 'development' ? err.stack : undefined,
+        path: req.path,
+        method: req.method,
+      },
+      'Unhandled error occurred'
+    );
   }
 
   if (req.file) {
-    await deleteFileFromCloudinary(req.file.path);
+    await deleteFileFromCloudinary(req.file.path).catch(() => {});
   }
 
   if (req.files && Array.isArray(req.files) && req.files.length > 0) {
     for (const file of req.files) {
-      await deleteFileFromCloudinary(file.path);
+      await deleteFileFromCloudinary(file.path).catch(() => {});
     }
   }
 

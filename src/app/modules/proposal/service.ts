@@ -1,11 +1,11 @@
-import AppError from '@/app/errorHelpers/AppError';
-import { IQueryParams } from '@/app/interfaces/Query.interface';
-import { IRequestUser } from '@/app/interfaces/requestUser.interface';
-import { prisma } from '@/app/lib/prisma';
-import { sendEmail } from '@/app/utils/emailService';
-import { QueryBuilder } from '@/app/utils/QueryBuilder';
-import { notificationUtils } from '@/app/utils/notification';
 import httpStatus from 'http-status';
+import AppError from '../../errorHelpers/AppError';
+import { prisma } from '../../lib/prisma';
+import { IRequestUser } from '../../interfaces/requestUser.interface';
+import { notificationUtils } from '../../utils/notification';
+import { sendEmail } from '../../utils/emailService';
+import { QueryBuilder } from '../../utils/QueryBuilder';
+import { IQueryParams } from '../../interfaces/Query.interface';
 
 const getFreelancerProfileId = async (userId: string) => {
   const freelancer = await prisma.freelancer.findFirst({

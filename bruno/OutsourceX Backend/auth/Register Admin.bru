@@ -1,23 +1,24 @@
 meta {
-  name: Login
+  name: Register Admin
   type: http
-  seq: 2
+  seq: 8
 }
 
 post {
-  url: {{baseUrl}}/auth/login
+  url: {{baseUrl}}/api/v1/auth/register
   body: json
   auth: none
 }
 
 headers {
   Content-Type: application/json
-  Origin: {{Origin}}
 }
 
 body:json {
   {
+    "name": "Client User",
     "email": "client@example.com",
-    "password": "Password123"
+    "password": "Password123",
+    "role": "CLIENT"
   }
 }

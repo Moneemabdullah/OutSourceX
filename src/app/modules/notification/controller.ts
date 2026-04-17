@@ -1,9 +1,9 @@
-import AppError from '@/app/errorHelpers/AppError';
-import catchAsync from '@/app/shared/catchAsync';
-import { sendResponse } from '@/app/shared/sendResponse';
 import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import { notificationService } from './service';
+import AppError from '../../errorHelpers/AppError';
+import catchAsync from '../../shared/catchAsync';
+import { sendResponse } from '../../shared/sendResponse';
 
 const getMyNotifications = catchAsync(async (req: Request, res: Response) => {
   if (!req.user) {

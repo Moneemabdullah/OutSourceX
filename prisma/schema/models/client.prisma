@@ -1,8 +1,8 @@
 model Client {
-    id  String  @id @default(uuid())
+    id  String  @id @default(cuid())
     bio String? @db.Text
 
-    userID String @map("user_id")
+    userID String @unique @map("user_id")
     user   User   @relation(fields: [userID], references: [id], onDelete: Cascade)
 
     jobs      Job[]

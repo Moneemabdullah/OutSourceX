@@ -1,10 +1,10 @@
-import AppError from '@/app/errorHelpers/AppError';
-import { IQueryParams } from '@/app/interfaces/Query.interface';
-import { IRequestUser } from '@/app/interfaces/requestUser.interface';
-import { prisma } from '@/app/lib/prisma';
-import { QueryBuilder } from '@/app/utils/QueryBuilder';
-import { notificationUtils } from '@/app/utils/notification';
 import httpStatus from 'http-status';
+import { IRequestUser } from '../../interfaces/requestUser.interface';
+import { prisma } from '../../lib/prisma';
+import AppError from '../../errorHelpers/AppError';
+import { notificationUtils } from '../../utils/notification';
+import { QueryBuilder } from '../../utils/QueryBuilder';
+import { IQueryParams } from '../../interfaces/Query.interface';
 
 const createContractFromProposal = async (
   user: IRequestUser,

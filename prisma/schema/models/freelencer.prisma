@@ -1,5 +1,5 @@
 model Freelancer {
-    id  String  @id @default(uuid())
+    id  String  @id @default(cuid())
     bio String? @db.Text
 
     cv         String? @map("cv_url")
@@ -8,7 +8,7 @@ model Freelancer {
     expertiseID String?    @map("expertise_id")
     expertise   Expertise? @relation(fields: [expertiseID], references: [id], onDelete: SetNull)
 
-    userID String @map("user_id")
+    userID String @unique @map("user_id")
     user   User   @relation(fields: [userID], references: [id], onDelete: Cascade)
 
     contracts Contract[]

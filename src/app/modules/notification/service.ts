@@ -1,7 +1,7 @@
-import AppError from '@/app/errorHelpers/AppError';
-import { IRequestUser } from '@/app/interfaces/requestUser.interface';
-import { prisma } from '@/app/lib/prisma';
 import httpStatus from 'http-status';
+import { IRequestUser } from '../../interfaces/requestUser.interface';
+import { prisma } from '../../lib/prisma';
+import AppError from '../../errorHelpers/AppError';
 
 const getMyNotifications = async (user: IRequestUser) => {
   return prisma.notification.findMany({

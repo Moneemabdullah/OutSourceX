@@ -1,11 +1,11 @@
-import AppError from '@/app/errorHelpers/AppError';
-import { IRequestUser } from '@/app/interfaces/requestUser.interface';
-import { prisma } from '@/app/lib/prisma';
-import { sendEmail } from '@/app/utils/emailService';
-import { notificationUtils } from '@/app/utils/notification';
-import { Prisma } from '@/generated/prisma/client';
 import httpStatus from 'http-status';
 import { randomUUID } from 'node:crypto';
+import { IRequestUser } from '../../interfaces/requestUser.interface';
+import { prisma } from '../../lib/prisma';
+import AppError from '../../errorHelpers/AppError';
+import { notificationUtils } from '../../utils/notification';
+import { Prisma } from '../../../generated/prisma/client';
+import { sendEmail } from '../../utils/emailService';
 
 const createEscrowPayment = async (
   user: IRequestUser,

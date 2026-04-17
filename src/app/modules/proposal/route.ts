@@ -1,8 +1,8 @@
-import { CheckAuth, validateRequest } from '@/app/middlewares';
-import { UserRole } from '@/generated/prisma/enums';
 import { Router } from 'express';
 import { proposalController } from './controller';
 import { proposalValidation } from './validation';
+import { UserRole } from '../../../generated/prisma/enums';
+import { CheckAuth, validateRequest } from '../../middlewares';
 
 const router = Router();
 

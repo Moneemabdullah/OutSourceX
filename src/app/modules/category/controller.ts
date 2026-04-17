@@ -1,8 +1,8 @@
-import catchAsync from '@/app/shared/catchAsync';
-import { sendResponse } from '@/app/shared/sendResponse';
 import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import { categoryService } from './service';
+import catchAsync from '../../shared/catchAsync';
+import { sendResponse } from '../../shared/sendResponse';
 
 const createCategory = catchAsync(async (req: Request, res: Response) => {
   const result = await categoryService.createCategory(req.body);

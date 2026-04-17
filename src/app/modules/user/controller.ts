@@ -47,8 +47,72 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getDashboard = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'Unauthorized access');
+  }
+
+  const result = await userService.getDashboard(req.user);
+
+  sendResponse(res, {
+    httpStatusCode: httpStatus.OK,
+    success: true,
+    message: 'Dashboard fetched successfully',
+    data: result,
+  });
+});
+
+const promoteAdmin = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.promoteAdmin(req.body);
+
+  sendResponse(res, {
+    httpStatusCode: httpStatus.OK,
+    success: true,
+    message: 'Admin created successfully',
+    data: result,
+  });
+});
+
+const demoteAdmin = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.demoteAdmin(String(req.params.userId), req.body);
+
+  sendResponse(res, {
+    httpStatusCode: httpStatus.OK,
+    success: true,
+    message: 'Admin removed successfully',
+    data: result,
+  });
+});
+
+const getTransactions = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.getTransactions(req.query as unknown as IQueryParams);
+
+  sendResponse(res, {
+    httpStatusCode: httpStatus.OK,
+    success: true,
+    message: 'Transactions fetched successfully',
+    data: result,
+  });
+});
+
+const getDisputes = catchAsync(async (_req: Request, res: Response) => {
+  const result = await userService.getDisputes();
+
+  sendResponse(res, {
+    httpStatusCode: httpStatus.OK,
+    success: true,
+    message: 'Disputes fetched successfully',
+    data: result,
+  });
+});
+
 export const userController = {
   getMyAccount,
   updateMyAccount,
   getAllUsers,
+  getDashboard,
+  promoteAdmin,
+  demoteAdmin,
+  getTransactions,
+  getDisputes,
 };

@@ -1,0 +1,13 @@
+meta {
+  name: Accept Proposal
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/proposals/replace-proposal-id/accept
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}

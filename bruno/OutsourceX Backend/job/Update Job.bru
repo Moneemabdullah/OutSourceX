@@ -1,0 +1,22 @@
+meta {
+  name: Update Job
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/jobs/replace-job-id
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "title": "Need senior backend developer",
+    "budget": 1500
+  }
+}

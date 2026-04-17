@@ -1,0 +1,9 @@
+meta {
+  name: List Jobs
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/v1/jobs?searchTerm=backend&page=1&limit=10&sortBy=createdAt&sortOrder=desc
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Create Proposal
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/proposals
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "jobID": "replace-job-id",
+    "coverLetter": "I can deliver this backend cleanly and on time.",
+    "bidAmount": 1100
+  }
+}

@@ -1,3 +1,4 @@
+import { UserRole } from '@/generated/prisma/enums';
 import z from 'zod';
 
 const updateMyAccount = z.object({
@@ -8,6 +9,23 @@ const updateMyAccount = z.object({
   }),
 });
 
+const promoteAdmin = z.object({
+  body: z.object({
+    userId: z.string(),
+  }),
+});
+
+const demoteAdmin = z.object({
+  body: z.object({
+    role: z.enum([UserRole.CLIENT, UserRole.FREELANCER]),
+  }),
+  params: z.object({
+    userId: z.string(),
+  }),
+});
+
 export const userValidation = {
   updateMyAccount,
+  promoteAdmin,
+  demoteAdmin,
 };

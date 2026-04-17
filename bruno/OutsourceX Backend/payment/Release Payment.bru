@@ -1,0 +1,13 @@
+meta {
+  name: Release Payment
+  type: http
+  seq: 2
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/payments/replace-payment-id/release
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}

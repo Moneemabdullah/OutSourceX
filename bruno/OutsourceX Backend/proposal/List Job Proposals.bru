@@ -1,0 +1,13 @@
+meta {
+  name: List Job Proposals
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v1/proposals/job/replace-job-id
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Register
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/register
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Client User",
+    "email": "client@example.com",
+    "password": "Password123",
+    "role": "CLIENT"
+  }
+}

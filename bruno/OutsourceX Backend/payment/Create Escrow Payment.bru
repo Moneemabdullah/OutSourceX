@@ -1,0 +1,25 @@
+meta {
+  name: Create Escrow Payment
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/payments
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "contractID": "replace-contract-id",
+    "amount": 1500,
+    "paymentGatewayData": {
+      "provider": "placeholder"
+    }
+  }
+}

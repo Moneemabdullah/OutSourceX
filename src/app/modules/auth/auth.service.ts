@@ -108,11 +108,18 @@ const loginUser = async (payload: ILoginUser) => {
   };
 };
 
-const getGoogleOAuthUrl = async () => {
+const getGoogleOAuthUrl = async (payload?: {
+  callbackURL?: string;
+  newUserCallbackURL?: string;
+  errorCallbackURL?: string;
+}) => {
   const response = (await auth.api.signInSocial({
     body: {
       provider: 'google',
       disableRedirect: true,
+      callbackURL: payload?.callbackURL,
+      newUserCallbackURL: payload?.newUserCallbackURL,
+      errorCallbackURL: payload?.errorCallbackURL,
     },
   })) as { url?: string };
 
@@ -121,6 +128,71 @@ const getGoogleOAuthUrl = async () => {
   }
 
   return response;
+};
+
+const changePassword = async (
+  user: IRequestUser,
+  payload: {
+    currentPassword: string;
+    newPassword: string;
+    revokeOtherSessions?: boolean;
+  },
+  headers?: HeadersInit
+) => {
+  const existingUser = await prisma.user.findUnique({
+    where: { id: user.userId },
+  });
+
+  if (!existingUser) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  return auth.api.changePassword({
+    body: {
+      currentPassword: payload.currentPassword,
+      newPassword: payload.newPassword,
+      revokeOtherSessions: payload.revokeOtherSessions,
+    },
+    headers,
+  });
+};
+
+const forgotPassword = async (email: string) => {
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  if (user.isDeleted || user.status === UserStatus.SUSPENDED) {
+    throw new AppError(httpStatus.FORBIDDEN, 'This account is not allowed to reset password');
+  }
+
+  return auth.api.requestPasswordResetEmailOTP({
+    body: {
+      email,
+    },
+  });
+};
+
+const resetPassword = async (payload: { email: string; otp: string; password: string }) => {
+  const user = await prisma.user.findUnique({
+    where: { email: payload.email },
+  });
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  return auth.api.resetPasswordEmailOTP({
+    body: {
+      email: payload.email,
+      otp: payload.otp,
+      password: payload.password,
+    },
+  });
 };
 
 const getMe = async (user: IRequestUser) => {
@@ -153,5 +225,8 @@ export const authService = {
   registerUser,
   loginUser,
   getGoogleOAuthUrl,
+  changePassword,
+  forgotPassword,
+  resetPassword,
   getMe,
 };

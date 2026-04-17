@@ -35,12 +35,55 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getGoogleOAuthUrl = catchAsync(async (_req: Request, res: Response) => {
-  const result = await authService.getGoogleOAuthUrl();
+  const result = await authService.getGoogleOAuthUrl({
+    callbackURL: typeof _req.query.callbackURL === 'string' ? _req.query.callbackURL : undefined,
+    newUserCallbackURL:
+      typeof _req.query.newUserCallbackURL === 'string' ? _req.query.newUserCallbackURL : undefined,
+    errorCallbackURL:
+      typeof _req.query.errorCallbackURL === 'string' ? _req.query.errorCallbackURL : undefined,
+  });
 
   sendResponse(res, {
     httpStatusCode: status.OK,
     success: true,
     message: 'Google OAuth URL generated successfully',
+    data: result,
+  });
+});
+
+const changePassword = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user) {
+    throw new AppError(status.UNAUTHORIZED, 'Unauthorized access');
+  }
+
+  const result = await authService.changePassword(req.user, req.body, req.headers as HeadersInit);
+
+  sendResponse(res, {
+    httpStatusCode: status.OK,
+    success: true,
+    message: 'Password changed successfully',
+    data: result,
+  });
+});
+
+const forgotPassword = catchAsync(async (req: Request, res: Response) => {
+  const result = await authService.forgotPassword(req.body.email);
+
+  sendResponse(res, {
+    httpStatusCode: status.OK,
+    success: true,
+    message: 'Password reset OTP sent successfully',
+    data: result,
+  });
+});
+
+const resetPassword = catchAsync(async (req: Request, res: Response) => {
+  const result = await authService.resetPassword(req.body);
+
+  sendResponse(res, {
+    httpStatusCode: status.OK,
+    success: true,
+    message: 'Password reset successfully',
     data: result,
   });
 });
@@ -64,5 +107,8 @@ export const authController = {
   registerUser,
   loginUser,
   getGoogleOAuthUrl,
+  changePassword,
+  forgotPassword,
+  resetPassword,
   getMe,
 };

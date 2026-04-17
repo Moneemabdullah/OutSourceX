@@ -43,7 +43,7 @@ export const auth = betterAuth({
             sendEmail({
               to: email,
               subject: 'Reset your password',
-              template: 'otp',
+              template: 'resetPassword',
               templateData: {
                 name: user.name,
                 otp,

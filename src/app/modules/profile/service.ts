@@ -6,6 +6,14 @@ import httpStatus from 'http-status';
 
 const resolveExpertiseId = async (payload: { expertiseId?: string; expertiseTitle?: string }) => {
   if (payload.expertiseId) {
+    const expertise = await prisma.expertise.findUnique({
+      where: { id: payload.expertiseId },
+    });
+
+    if (!expertise) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Expertise not found');
+    }
+
     return payload.expertiseId;
   }
 
@@ -61,6 +69,10 @@ const upsertMyProfile = async (
     }
 
     const expertiseId = await resolveExpertiseId(payload);
+
+    if (payload.hourlyRate !== undefined && payload.hourlyRate < 0) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Hourly rate cannot be negative');
+    }
 
     return prisma.freelancer.update({
       where: { id: freelancer.id },

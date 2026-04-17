@@ -47,6 +47,16 @@ const createContractFromProposal = async (
     throw new AppError(httpStatus.CONFLICT, 'A contract already exists for this proposal');
   }
 
+  const duplicateContract = await prisma.contract.findFirst({
+    where: {
+      proposalID: proposal.id,
+    },
+  });
+
+  if (duplicateContract) {
+    throw new AppError(httpStatus.CONFLICT, 'A contract already exists for this proposal');
+  }
+
   const contract = await prisma.contract.create({
     data: {
       title: payload.title,

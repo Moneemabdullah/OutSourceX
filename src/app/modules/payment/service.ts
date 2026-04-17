@@ -35,6 +35,14 @@ const createEscrowPayment = async (
     throw new AppError(httpStatus.FORBIDDEN, 'Only the client can fund escrow');
   }
 
+  const existingPayment = await prisma.payment.findUnique({
+    where: { contractID: payload.contractID },
+  });
+
+  if (existingPayment?.status === 'RELEASED') {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Released payments cannot be funded again');
+  }
+
   const payment = await prisma.payment.upsert({
     where: { contractID: payload.contractID },
     update: {
@@ -88,6 +96,14 @@ const releasePayment = async (user: IRequestUser, paymentId: string) => {
 
   if (payment.contract.client.user.id !== user.userId) {
     throw new AppError(httpStatus.FORBIDDEN, 'Only the client can release payment');
+  }
+
+  if (payment.status === 'RELEASED') {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Payment has already been released');
+  }
+
+  if (payment.status !== 'ESCROW') {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Only escrow payments can be released');
   }
 
   const releasedPayment = await prisma.payment.update({

@@ -1,5 +1,7 @@
+import AppError from '@/app/errorHelpers/AppError';
 import { IRequestUser } from '@/app/interfaces/requestUser.interface';
 import { prisma } from '@/app/lib/prisma';
+import httpStatus from 'http-status';
 
 const getMyNotifications = async (user: IRequestUser) => {
   return prisma.notification.findMany({
@@ -13,7 +15,7 @@ const getMyNotifications = async (user: IRequestUser) => {
 };
 
 const markAsRead = async (user: IRequestUser, notificationId: string) => {
-  await prisma.notification.updateMany({
+  const result = await prisma.notification.updateMany({
     where: {
       id: notificationId,
       userID: user.userId,
@@ -22,6 +24,10 @@ const markAsRead = async (user: IRequestUser, notificationId: string) => {
       isRead: true,
     },
   });
+
+  if (result.count === 0) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Notification not found');
+  }
 
   return prisma.notification.findUnique({
     where: {

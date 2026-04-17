@@ -51,6 +51,10 @@ const applyToJob = async (
     throw new AppError(httpStatus.NOT_FOUND, 'Job not found');
   }
 
+  if (job.owner.user.id === user.userId) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'You cannot submit a proposal to your own job');
+  }
+
   const proposal = await prisma.proposal.create({
     data: {
       jobID: payload.jobID,
@@ -92,6 +96,14 @@ const acceptProposal = async (user: IRequestUser, proposalId: string) => {
 
   if (!proposal) {
     throw new AppError(httpStatus.NOT_FOUND, 'Proposal not found');
+  }
+
+  if (proposal.status === 'ACCEPTED') {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Proposal has already been accepted');
+  }
+
+  if (proposal.status === 'REJECTED') {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Rejected proposals cannot be accepted');
   }
 
   if (proposal.job.owner.user.id !== user.userId) {

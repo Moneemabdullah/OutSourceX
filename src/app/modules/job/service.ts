@@ -28,6 +28,17 @@ const createJob = async (
   }
 ) => {
   const clientId = await getClientProfileId(user.userId);
+  const category = await prisma.jobCategory.findUnique({
+    where: { id: payload.categoryID },
+  });
+
+  if (!category) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
+  }
+
+  if (payload.deadline && new Date(payload.deadline) <= new Date()) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Deadline must be in the future');
+  }
 
   return prisma.job.create({
     data: {
@@ -53,10 +64,33 @@ const updateJob = async (
   }
 ) => {
   const clientId = await getClientProfileId(user.userId);
-  const job = await prisma.job.findUnique({ where: { id: jobId } });
+  const job = await prisma.job.findUnique({
+    where: { id: jobId },
+    include: {
+      contracts: true,
+    },
+  });
 
   if (!job || job.ownerID !== clientId) {
     throw new AppError(httpStatus.NOT_FOUND, 'Job not found');
+  }
+
+  if (payload.categoryID) {
+    const category = await prisma.jobCategory.findUnique({
+      where: { id: payload.categoryID },
+    });
+
+    if (!category) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
+    }
+  }
+
+  if (payload.deadline && new Date(payload.deadline) <= new Date()) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Deadline must be in the future');
+  }
+
+  if (job.contracts.length > 0) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Jobs with contracts cannot be modified');
   }
 
   return prisma.job.update({
@@ -70,10 +104,19 @@ const updateJob = async (
 
 const deleteJob = async (user: IRequestUser, jobId: string) => {
   const clientId = await getClientProfileId(user.userId);
-  const job = await prisma.job.findUnique({ where: { id: jobId } });
+  const job = await prisma.job.findUnique({
+    where: { id: jobId },
+    include: {
+      contracts: true,
+    },
+  });
 
   if (!job || job.ownerID !== clientId) {
     throw new AppError(httpStatus.NOT_FOUND, 'Job not found');
+  }
+
+  if (job.contracts.length > 0) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Jobs with contracts cannot be deleted');
   }
 
   return prisma.job.delete({

@@ -6,6 +6,11 @@ import { proposalValidation } from './validation';
 
 const router = Router();
 
+router.get(
+  '/',
+  CheckAuth(UserRole.CLIENT, UserRole.FREELANCER, UserRole.ADMIN, UserRole.SUPER_ADMIN),
+  proposalController.getProposals
+);
 router.post(
   '/',
   CheckAuth(UserRole.FREELANCER),

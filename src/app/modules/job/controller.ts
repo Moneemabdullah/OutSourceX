@@ -1,4 +1,5 @@
 import AppError from '@/app/errorHelpers/AppError';
+import { IQueryParams } from '@/app/interfaces/Query.interface';
 import catchAsync from '@/app/shared/catchAsync';
 import { sendResponse } from '@/app/shared/sendResponse';
 import { Request, Response } from 'express';
@@ -51,7 +52,7 @@ const deleteJob = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getJobs = catchAsync(async (req: Request, res: Response) => {
-  const result = await jobService.getJobs(req.query as { categoryId?: string });
+  const result = await jobService.getJobs(req.query as unknown as IQueryParams);
 
   sendResponse(res, {
     httpStatusCode: httpStatus.OK,

@@ -1,4 +1,5 @@
 import AppError from '@/app/errorHelpers/AppError';
+import { IQueryParams } from '@/app/interfaces/Query.interface';
 import catchAsync from '@/app/shared/catchAsync';
 import { sendResponse } from '@/app/shared/sendResponse';
 import { Request, Response } from 'express';
@@ -25,7 +26,7 @@ const getContracts = catchAsync(async (req: Request, res: Response) => {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Unauthorized access');
   }
 
-  const result = await contractService.getContracts(req.user);
+  const result = await contractService.getContracts(req.user, req.query as unknown as IQueryParams);
 
   sendResponse(res, {
     httpStatusCode: httpStatus.OK,

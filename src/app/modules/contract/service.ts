@@ -1,6 +1,8 @@
 import AppError from '@/app/errorHelpers/AppError';
+import { IQueryParams } from '@/app/interfaces/Query.interface';
 import { IRequestUser } from '@/app/interfaces/requestUser.interface';
 import { prisma } from '@/app/lib/prisma';
+import { QueryBuilder } from '@/app/utils/QueryBuilder';
 import { notificationUtils } from '@/app/utils/notification';
 import httpStatus from 'http-status';
 
@@ -78,9 +80,20 @@ const createContractFromProposal = async (
   return contract;
 };
 
-const getContracts = async (user: IRequestUser) => {
-  return prisma.contract.findMany({
-    where: {
+const getContracts = async (user: IRequestUser, query: IQueryParams) => {
+  const queryBuilder = new QueryBuilder(prisma.contract, query, {
+    searchableFields: [
+      'title',
+      'description',
+      'job.title',
+      'freelancer.user.name',
+      'client.user.name',
+    ],
+    filterableFields: ['jobID', 'proposalID', 'freelancerID', 'clientID'],
+  });
+
+  return queryBuilder
+    .where({
       OR: [
         {
           client: {
@@ -93,8 +106,12 @@ const getContracts = async (user: IRequestUser) => {
           },
         },
       ],
-    },
-    include: {
+    })
+    .search()
+    .filter()
+    .sort()
+    .paginate()
+    .include({
       job: true,
       freelancer: {
         include: {
@@ -106,11 +123,8 @@ const getContracts = async (user: IRequestUser) => {
           user: true,
         },
       },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
+    })
+    .execute();
 };
 
 export const contractService = {

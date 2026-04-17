@@ -1,4 +1,5 @@
 import AppError from '@/app/errorHelpers/AppError';
+import { IQueryParams } from '@/app/interfaces/Query.interface';
 import catchAsync from '@/app/shared/catchAsync';
 import { sendResponse } from '@/app/shared/sendResponse';
 import { Request, Response } from 'express';
@@ -36,7 +37,25 @@ const acceptProposal = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getJobProposals = catchAsync(async (req: Request, res: Response) => {
-  const result = await proposalService.getJobProposals(String(req.params.jobId));
+  const result = await proposalService.getJobProposals(
+    String(req.params.jobId),
+    req.query as unknown as IQueryParams
+  );
+
+  sendResponse(res, {
+    httpStatusCode: httpStatus.OK,
+    success: true,
+    message: 'Proposals fetched successfully',
+    data: result,
+  });
+});
+
+const getProposals = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'Unauthorized access');
+  }
+
+  const result = await proposalService.getProposals(req.user, req.query as unknown as IQueryParams);
 
   sendResponse(res, {
     httpStatusCode: httpStatus.OK,
@@ -50,4 +69,5 @@ export const proposalController = {
   applyToJob,
   acceptProposal,
   getJobProposals,
+  getProposals,
 };

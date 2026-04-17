@@ -1,6 +1,8 @@
 import AppError from '@/app/errorHelpers/AppError';
+import { IQueryParams } from '@/app/interfaces/Query.interface';
 import { IRequestUser } from '@/app/interfaces/requestUser.interface';
 import { prisma } from '@/app/lib/prisma';
+import { QueryBuilder } from '@/app/utils/QueryBuilder';
 import httpStatus from 'http-status';
 
 const getClientProfileId = async (userId: string) => {
@@ -79,23 +81,26 @@ const deleteJob = async (user: IRequestUser, jobId: string) => {
   });
 };
 
-const getJobs = async (query: { categoryId?: string }) => {
-  return prisma.job.findMany({
-    where: {
-      categoryID: query.categoryId,
-    },
-    include: {
+const getJobs = async (query: IQueryParams) => {
+  const queryBuilder = new QueryBuilder(prisma.job, query, {
+    searchableFields: ['title', 'description', 'category.title', 'owner.user.name'],
+    filterableFields: ['categoryID', 'ownerID', 'budget', 'deadline'],
+  });
+
+  return queryBuilder
+    .search()
+    .filter()
+    .sort()
+    .paginate()
+    .include({
       category: true,
       owner: {
         include: {
           user: true,
         },
       },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
+    })
+    .execute();
 };
 
 export const jobService = {

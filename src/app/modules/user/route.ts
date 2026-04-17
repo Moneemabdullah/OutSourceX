@@ -6,6 +6,7 @@ import { userValidation } from './validation';
 
 const router = Router();
 
+router.get('/', CheckAuth(UserRole.ADMIN, UserRole.SUPER_ADMIN), userController.getAllUsers);
 router.get(
   '/me',
   CheckAuth(UserRole.CLIENT, UserRole.FREELANCER, UserRole.ADMIN, UserRole.SUPER_ADMIN),

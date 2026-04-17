@@ -1,7 +1,9 @@
 import AppError from '@/app/errorHelpers/AppError';
+import { IQueryParams } from '@/app/interfaces/Query.interface';
 import { IRequestUser } from '@/app/interfaces/requestUser.interface';
 import { prisma } from '@/app/lib/prisma';
 import { sendEmail } from '@/app/utils/emailService';
+import { QueryBuilder } from '@/app/utils/QueryBuilder';
 import { notificationUtils } from '@/app/utils/notification';
 import httpStatus from 'http-status';
 
@@ -135,25 +137,80 @@ const acceptProposal = async (user: IRequestUser, proposalId: string) => {
   return acceptedProposal;
 };
 
-const getJobProposals = async (jobId: string) => {
-  return prisma.proposal.findMany({
-    where: { jobID: jobId },
-    include: {
+const getJobProposals = async (jobId: string, query: IQueryParams) => {
+  const queryBuilder = new QueryBuilder(prisma.proposal, query, {
+    searchableFields: ['coverLetter', 'freelancer.user.name', 'job.title'],
+    filterableFields: ['status', 'jobID', 'freelancerID', 'bidAmount'],
+  });
+
+  return queryBuilder
+    .where({ jobID: jobId })
+    .search()
+    .filter()
+    .sort()
+    .paginate()
+    .include({
       freelancer: {
         include: {
           user: true,
           expertise: true,
         },
       },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
+      job: true,
+    })
+    .execute();
+};
+
+const getProposals = async (user: IRequestUser, query: IQueryParams) => {
+  const queryBuilder = new QueryBuilder(prisma.proposal, query, {
+    searchableFields: ['coverLetter', 'freelancer.user.name', 'job.title'],
+    filterableFields: ['status', 'jobID', 'freelancerID', 'bidAmount'],
   });
+
+  const baseWhere =
+    user.role === 'FREELANCER'
+      ? {
+          freelancer: {
+            userID: user.userId,
+          },
+        }
+      : {
+          job: {
+            owner: {
+              userID: user.userId,
+            },
+          },
+        };
+
+  return queryBuilder
+    .where(baseWhere)
+    .search()
+    .filter()
+    .sort()
+    .paginate()
+    .include({
+      freelancer: {
+        include: {
+          user: true,
+          expertise: true,
+        },
+      },
+      job: {
+        include: {
+          owner: {
+            include: {
+              user: true,
+            },
+          },
+        },
+      },
+    })
+    .execute();
 };
 
 export const proposalService = {
   applyToJob,
   acceptProposal,
   getJobProposals,
+  getProposals,
 };

@@ -43,6 +43,32 @@ const createEscrowPayment = async (
     throw new AppError(httpStatus.BAD_REQUEST, 'Released payments cannot be funded again');
   }
 
+  const milestones = await prisma.milestone.findMany({
+    where: {
+      jobID: contract.jobID,
+    },
+  });
+
+  if (milestones.length === 0) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Create at least one milestone before funding escrow'
+    );
+  }
+
+  const totalMilestoneAmount = milestones.reduce((sum, milestone) => sum + milestone.amount, 0);
+
+  if (payload.amount < totalMilestoneAmount) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Escrow amount must cover the total amount of all milestones'
+    );
+  }
+
+  if (existingPayment?.status === 'ESCROW' && existingPayment.amount === payload.amount) {
+    throw new AppError(httpStatus.CONFLICT, 'Escrow has already been funded with this amount');
+  }
+
   const payment = await prisma.payment.upsert({
     where: { contractID: payload.contractID },
     update: {
@@ -104,6 +130,27 @@ const releasePayment = async (user: IRequestUser, paymentId: string) => {
 
   if (payment.status !== 'ESCROW') {
     throw new AppError(httpStatus.BAD_REQUEST, 'Only escrow payments can be released');
+  }
+
+  const milestones = await prisma.milestone.findMany({
+    where: {
+      jobID: payment.contract.jobID,
+    },
+  });
+
+  if (milestones.length === 0) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'No milestones found for this contract');
+  }
+
+  const hasIncompleteMilestone = milestones.some(
+    (milestone) => milestone.milestoneStatus !== 'COMPLETED'
+  );
+
+  if (hasIncompleteMilestone) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'All milestones must be completed before releasing payment'
+    );
   }
 
   const releasedPayment = await prisma.payment.update({

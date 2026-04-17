@@ -12,6 +12,11 @@ router.post(
   validateRequest(paymentValidation.createEscrowPayment),
   paymentController.createEscrowPayment
 );
-router.patch('/:paymentId/release', CheckAuth(UserRole.CLIENT), paymentController.releasePayment);
+router.patch(
+  '/:paymentId/release',
+  CheckAuth(UserRole.CLIENT),
+  validateRequest(paymentValidation.releasePayment),
+  paymentController.releasePayment
+);
 
 export const paymentRoute = router;

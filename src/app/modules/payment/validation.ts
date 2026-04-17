@@ -8,6 +8,13 @@ const createEscrowPayment = z.object({
   }),
 });
 
+const releasePayment = z.object({
+  params: z.object({
+    paymentId: z.string(),
+  }),
+});
+
 export const paymentValidation = {
   createEscrowPayment,
+  releasePayment,
 };

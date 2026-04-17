@@ -7,6 +7,7 @@ import { auth } from './app/lib/auth';
 import path from 'node:path';
 import cors from 'cors';
 import { envVars } from './app/config/env.utils';
+import { indexRoute } from './app/routes';
 
 const app: Application = express();
 
@@ -27,6 +28,8 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use('/api/auth', toNodeHandler(auth));
+
+app.use('/api/v1', indexRoute);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('Hello, World!');

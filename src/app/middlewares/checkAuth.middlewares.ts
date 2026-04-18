@@ -1,102 +1,121 @@
 import { NextFunction, Request, Response } from 'express';
 import status from 'http-status';
-import { UserRole, UserStatus } from '../../generated/prisma/enums';
-import { envVars } from '../config/env.utils';
+
 import AppError from '../errorHelpers/AppError';
 import { prisma } from '../lib/prisma';
 import { cookieUtils } from '../utils/cookie';
 import { jwtUtils } from '../utils/jwt';
-
-const sessionCookieKeys = [
-  'better-auth.session_token',
-  'better-auth-session-token',
-  'better-auth-session',
-];
-
-const ensureRole = (role: UserRole, authRoles: UserRole[]) => {
-  if (authRoles.length > 0 && !authRoles.includes(role)) {
-    throw new AppError(status.FORBIDDEN, 'Forbidden: insufficient permissions');
-  }
-};
+import { role } from 'better-auth/client';
+import { UserRole, UserStatus } from '../../generated/prisma/enums';
+import { envVars } from '../config/env.utils';
 
 export const CheckAuth =
   (...authRoles: UserRole[]) =>
-  async (req: Request, _res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const authHeader = req.headers.authorization;
-      const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : undefined;
-      const accessToken = bearerToken ?? cookieUtils.getCookie(req, 'accessToken');
-
-      if (accessToken) {
-        const verifiedToken = jwtUtils.verifyToken(
-          accessToken,
-          envVars.ACCESS_TOKEN_SECRET as string
-        );
-
-        if (verifiedToken.success && verifiedToken.data && typeof verifiedToken.data !== 'string') {
-          const payload = verifiedToken.data as {
-            userId?: string;
-            email?: string;
-            role?: UserRole;
-          };
-
-          if (!payload.userId || !payload.email || !payload.role) {
-            throw new AppError(status.UNAUTHORIZED, 'Unauthorized access');
-          }
-
-          ensureRole(payload.role, authRoles);
-
-          req.user = {
-            userId: payload.userId,
-            email: payload.email,
-            role: payload.role,
-          };
-
-          return next();
-        }
-      }
-
-      const sessionToken = sessionCookieKeys
-        .map((key) => cookieUtils.getCookie(req, key))
-        .find(Boolean);
+      const sessionToken = cookieUtils.getCookie(req, 'better-auth-session-token');
 
       if (!sessionToken) {
-        throw new AppError(status.UNAUTHORIZED, 'Unauthorized access');
+        throw new AppError(status.UNAUTHORIZED, 'Unauthorized: No session token provided');
+      }
+      if (sessionToken) {
+        const sessionExists = await prisma.session.findFirst({
+          where: {
+            token: sessionToken,
+            expiresAt: {
+              gt: new Date(),
+            },
+          },
+          include: {
+            user: true,
+          },
+        });
+
+        if (sessionExists && sessionExists.user) {
+          const user = sessionExists.user;
+
+          const now = new Date();
+          const expiresAt = new Date(sessionExists.expiresAt);
+          const createdAt = new Date(sessionExists.createdAt);
+
+          const sessionLifeTime = expiresAt.getTime() - createdAt.getTime();
+
+          const timeLeft = expiresAt.getTime() - now.getTime();
+
+          const percentageLeft = (timeLeft / sessionLifeTime) * 100;
+
+          if (percentageLeft < 20) {
+            res.setHeader('X-Session-Expiring', 'true');
+            res.setHeader('X-Session-Expires-At', expiresAt.toISOString());
+            res.setHeader('X-Time-remaining', timeLeft.toString());
+          }
+
+          if (user.status === UserStatus.SUSPENDED) {
+            throw new AppError(
+              status.FORBIDDEN,
+              'Your account is suspended. Please contact support.'
+            );
+          }
+
+          if (user.isDeleted) {
+            throw new AppError(
+              status.FORBIDDEN,
+              'Your account is deleted. Please contact support.'
+            );
+          }
+
+          if (authRoles.length > 0 && !authRoles.includes(user.role as UserRole)) {
+            throw new AppError(status.FORBIDDEN, 'Forbidden: Insufficient permissions');
+          }
+
+          req.user = {
+            userId: user.id,
+            role: user.role as UserRole,
+            email: user.email,
+          };
+        }
+
+        const accessToken = cookieUtils.getCookie(req, 'accessToken');
+
+        if (!accessToken) {
+          throw new AppError(status.UNAUTHORIZED, 'Unauthorized access! No access token provided.');
+        }
+      }
+      //Access Token Verification
+      const accessToken = cookieUtils.getCookie(req, 'accessToken');
+
+      if (!accessToken) {
+        throw new AppError(status.UNAUTHORIZED, 'Unauthorized access! No access token provided.');
       }
 
-      const session = (await prisma.session.findFirst({
-        where: { sessionToken },
-        include: { user: true },
-      })) as
-        | ({
-            user: {
-              id: string;
-              email: string;
-              role: UserRole;
-              status: UserStatus;
-              isDeleted: boolean;
-            };
-          } & { expires: Date })
-        | null;
+      const verifiedToken = jwtUtils.verifyToken(
+        accessToken,
+        envVars.ACCESS_TOKEN_SECRET as string
+      );
 
-      if (!session || session.expires <= new Date()) {
-        throw new AppError(status.UNAUTHORIZED, 'Session expired or invalid');
+      if (!verifiedToken.success) {
+        throw new AppError(status.UNAUTHORIZED, 'Unauthorized access! Invalid access token.');
       }
 
-      if (session.user.status === UserStatus.SUSPENDED || session.user.isDeleted) {
-        throw new AppError(status.FORBIDDEN, 'Your account is not allowed to access this resource');
+      const tokenPayload = verifiedToken.data;
+      const tokenRole =
+        typeof tokenPayload === 'object' && tokenPayload !== null && 'role' in tokenPayload
+          ? tokenPayload.role
+          : undefined;
+
+      if (!tokenRole) {
+        throw new AppError(status.UNAUTHORIZED, 'Unauthorized access! Invalid token payload.');
       }
 
-      ensureRole(session.user.role as UserRole, authRoles);
+      if (authRoles.length > 0 && !authRoles.includes(tokenRole as UserRole)) {
+        throw new AppError(
+          status.FORBIDDEN,
+          'Forbidden access! You do not have permission to access this resource.'
+        );
+      }
 
-      req.user = {
-        userId: session.user.id,
-        email: session.user.email,
-        role: session.user.role as UserRole,
-      };
-
-      return next();
+      next();
     } catch (error) {
-      return next(error);
+      next(error);
     }
   };

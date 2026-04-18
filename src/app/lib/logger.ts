@@ -18,12 +18,12 @@ const errorLog = path.join(logDir, 'error.log');
 // 🔥 streams
 const streams: pino.StreamEntry[] = [
   {
-    level: 'debug',
-    stream: pino.destination({ dest: appLog, sync: false }),
-  },
-  {
     level: 'error',
     stream: pino.destination({ dest: errorLog, sync: false }),
+  },
+  {
+    level: 'debug',
+    stream: pino.destination({ dest: appLog, sync: false }),
   },
 ];
 

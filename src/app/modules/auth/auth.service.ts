@@ -1,14 +1,14 @@
 import httpStatus from 'http-status';
 import { ILoginUser, IRegisterUser } from './user.interface';
-import { UserRole, UserStatus } from '../../../generated/prisma/enums';
+
 import { tokenUtils } from '../../utils/token';
 import { auth } from '../../lib/auth';
 import AppError from '../../errorHelpers/AppError';
 import { sendEmail } from '../../utils/emailService';
 import { IRequestUser } from '../../interfaces/requestUser.interface';
 import { prisma } from '../../lib/prisma';
-import { Prisma } from '../../../generated/prisma/browser';
-import { createLogger } from '../../lib/logger';
+import { Prisma, UserRole, UserStatus } from '../../../generated/prisma/browser';
+import logger, { createLogger } from '../../lib/logger';
 
 const authLogger = createLogger('AuthService');
 
@@ -84,54 +84,54 @@ const registerUser = async (payload: IRegisterUser) => {
   }
 
   const dbUser = await prisma.$transaction(async (tx) => {
-    const user = await tx.user.upsert({
-      where: { id: response.user!.id },
-      update: {},
-      create: {
-        id: response.user!.id,
-        email: response.user!.email,
-        name: response.user!.name,
-        role: response.user!.role,
-      },
-    });
+    // const user = await tx.user.upsert({
+    //   where: { id: response.user!.id },
+    //   update: {},
+    //   create: {
+    //     id: response.user!.id,
+    //     email: response.user!.email,
+    //     name: response.user!.name,
+    //     role: response.user!.role,
+    //   },
+    // });
 
-    await ensureAccountProfile(tx, user.id, user.role);
-    return user;
+    await ensureAccountProfile(tx, response.user!.id, response.user!.role);
+    return response.user;
   });
 
   await sendEmail({
-    to: dbUser.email,
+    to: response.user!.email,
     subject: 'Welcome to OutsourceX',
     template: 'welcome',
     templateData: {
-      name: dbUser.name,
-      role: dbUser.role,
+      name: response.user!.name,
+      role: response.user!.role,
     },
   });
 
   const tokenUser: TAuthUser = {
-    id: dbUser.id,
-    email: dbUser.email,
-    name: dbUser.name || '',
-    role: dbUser.role,
-    status: dbUser.status,
-    isDeleted: dbUser.isDeleted,
-    emailVerified: dbUser.emailVerified,
+    id: response.user!.id,
+    email: response.user!.email,
+    name: response.user!.name || '',
+    role: response.user!.role,
+    status: response.user!.status,
+    isDeleted: response.user!.isDeleted,
+    emailVerified: response.user!.emailVerified,
   };
 
   return {
-    user: dbUser,
+    user: response.user,
     ...issueTokens(tokenUser),
   };
 };
 
 const loginUser = async (payload: ILoginUser) => {
-  const response = (await auth.api.signInEmail({
+  const response = await auth.api.signInEmail({
     body: {
       email: payload.email,
       password: payload.password,
     },
-  })) as { user?: TAuthUser };
+  });
 
   if (!response.user) {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Invalid email or password');
@@ -142,12 +142,12 @@ const loginUser = async (payload: ILoginUser) => {
   }
 
   await prisma.$transaction(async (tx) => {
-    await ensureAccountProfile(tx, response.user!.id, response.user!.role);
+    await ensureAccountProfile(tx, response.user!.id, response.user!.role as UserRole);
   });
 
   return {
-    user: response.user,
-    ...issueTokens(response.user),
+    user: response,
+    ...issueTokens(response.user as TAuthUser),
   };
 };
 

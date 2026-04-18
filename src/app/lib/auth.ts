@@ -2,11 +2,11 @@ import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { bearer, emailOTP } from 'better-auth/plugins';
 import ms from 'ms';
-import { UserRole, UserStatus } from '../../generated/prisma/client.js';
 import { prisma } from './prisma';
 
 import { envVars } from '../config/env.utils.js';
 import { sendEmail } from '../utils/emailService.js';
+import { UserRole, UserStatus } from '../../generated/prisma/enums';
 
 export const auth = betterAuth({
   baseURL: envVars.BETTER_AUTH_URL as string,
@@ -121,16 +121,16 @@ export const auth = betterAuth({
 
   session: {
     expiresIn: Number(
-      ms(24 * 60 * 60 * 1000) // 1 day
+      24 * 60 * 60 * 1000 // 1 day
     ),
 
     updateAge: Number(
-      ms(24 * 60 * 60 * 1000) // 1 day
+      24 * 60 * 60 * 1000 // 1 day
     ),
     cookieCache: {
       enabled: true,
       maxAge: Number(
-        ms(24 * 60 * 60 * 1000) // 1 day
+        24 * 60 * 60 * 1000 // 1 day
       ),
     },
   },

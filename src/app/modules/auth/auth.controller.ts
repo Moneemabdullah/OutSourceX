@@ -5,6 +5,8 @@ import { sendResponse } from '../../shared/sendResponse';
 import { tokenUtils } from '../../utils/token';
 import catchAsync from '../../shared/catchAsync';
 import AppError from '../../errorHelpers/AppError';
+import { createLogger } from 'better-auth';
+import { log } from 'console';
 
 const registerUser = catchAsync(async (req: Request, res: Response) => {
   const result = await authService.registerUser(req.body);
@@ -23,14 +25,17 @@ const registerUser = catchAsync(async (req: Request, res: Response) => {
 const loginUser = catchAsync(async (req: Request, res: Response) => {
   const result = await authService.loginUser(req.body);
 
-  tokenUtils.setAccessToken(res, result.accessToken);
-  tokenUtils.setRefreshToken(res, result.refreshToken);
+  const { accessToken, refreshToken, user } = result;
+
+  tokenUtils.setAccessToken(res, accessToken);
+  tokenUtils.setRefreshToken(res, refreshToken);
+  tokenUtils.setBetterAuthSessionCookies(res, user.token);
 
   sendResponse(res, {
     httpStatusCode: status.OK,
     success: true,
     message: 'User logged in successfully',
-    data: result,
+    data: result.user,
   });
 });
 

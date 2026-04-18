@@ -38,6 +38,17 @@ const createReview = async (
       throw new AppError(httpStatus.CONFLICT, 'You have already reviewed this freelancer');
     }
 
+    const completedContract = await prisma.contract.findFirst({
+      where: {
+        clientID: client.id,
+        freelancerID: payload.freelancerID,
+        payment: { status: 'RELEASED' }, // or add ContractStatus.COMPLETED
+      },
+    });
+    if (!completedContract) {
+      throw new AppError(403, 'You can only review after completing a contract together');
+    }
+
     const review = await prisma.review.create({
       data: {
         clientID: client.id,
@@ -82,6 +93,17 @@ const createReview = async (
 
   if (existingReview) {
     throw new AppError(httpStatus.CONFLICT, 'You have already reviewed this client');
+  }
+
+  const completedContract = await prisma.contract.findFirst({
+    where: {
+      clientID: client.id,
+      freelancerID: payload.freelancerID,
+      payment: { status: 'RELEASED' }, // or add ContractStatus.COMPLETED
+    },
+  });
+  if (!completedContract) {
+    throw new AppError(403, 'You can only review after completing a contract together');
   }
 
   const review = await prisma.review.create({

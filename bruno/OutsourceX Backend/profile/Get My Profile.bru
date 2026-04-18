@@ -1,0 +1,17 @@
+meta {
+  name: Get My Profile
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/profiles/me
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Origin: {{Origin}}
+  Authorization: Bearer {{accessToken}}
+}

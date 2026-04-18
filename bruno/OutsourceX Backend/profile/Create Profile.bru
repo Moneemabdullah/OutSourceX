@@ -1,0 +1,27 @@
+meta {
+  name: Create Profile
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/profiles
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Origin: {{Origin}}
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "title": "Software Developer",
+    "bio": "Experienced developer",
+    "skills": ["TypeScript", "Node.js"],
+    "hourlyRate": 50,
+    "categoryId": "{{categoryId}}"
+  }
+}

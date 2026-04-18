@@ -1,0 +1,17 @@
+meta {
+  name: Get My Account
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/v1/users/me
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Origin: {{Origin}}
+  Authorization: Bearer {{accessToken}}
+}

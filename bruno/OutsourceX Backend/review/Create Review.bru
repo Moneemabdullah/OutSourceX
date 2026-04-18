@@ -1,0 +1,25 @@
+meta {
+  name: Create Review
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/reviews
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Origin: {{Origin}}
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "contractId": "{{contractId}}",
+    "rating": 5,
+    "comment": "Great work! Very professional and timely."
+  }
+}

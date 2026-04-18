@@ -1,0 +1,28 @@
+meta {
+  name: Promote Admin
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/users/admins/promote
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Origin: {{Origin}}
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "userId": "{{userId}}",
+    "role": "ADMIN"
+  }
+}
+
+vars:pre-request {
+  userId: KLrUiAdHYwAU17mDOwtAFzGGzhs68x0z
+}

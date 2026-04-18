@@ -1,0 +1,27 @@
+meta {
+  name: Create Milestone
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/milestones
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Origin: {{Origin}}
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "title": "Phase 1 - Setup",
+    "description": "Initial setup and configuration",
+    "amount": 500,
+    "dueDate": "2026-05-01",
+    "contractId": "{{contractId}}"
+  }
+}

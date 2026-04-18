@@ -1,0 +1,21 @@
+meta {
+  name: Demote Admin
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/users/admins/{{userId}}/demote
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Origin: {{Origin}}
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {}
+}

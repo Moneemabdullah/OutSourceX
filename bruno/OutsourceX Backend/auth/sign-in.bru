@@ -1,0 +1,23 @@
+meta {
+  name: sign-in
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/login
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "email": "client1@example.com",
+    "password": "Password123"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,27 @@
+meta {
+  name: Update Profile
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/profiles
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Origin: {{Origin}}
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "title": "Senior Software Developer",
+    "bio": "Updated bio",
+    "skills": ["TypeScript", "Node.js", "React"],
+    "hourlyRate": 75,
+    "categoryId": "{{categoryId}}"
+  }
+}

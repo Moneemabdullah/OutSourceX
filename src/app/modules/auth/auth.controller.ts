@@ -5,8 +5,6 @@ import { sendResponse } from '../../shared/sendResponse';
 import { tokenUtils } from '../../utils/token';
 import catchAsync from '../../shared/catchAsync';
 import AppError from '../../errorHelpers/AppError';
-import { createLogger } from 'better-auth';
-import { log } from 'console';
 
 const registerUser = catchAsync(async (req: Request, res: Response) => {
   const result = await authService.registerUser(req.body);

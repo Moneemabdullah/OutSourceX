@@ -8,7 +8,6 @@ import { sendEmail } from '../../utils/emailService';
 import { IRequestUser } from '../../interfaces/requestUser.interface';
 import { prisma } from '../../lib/prisma';
 import { Prisma, UserRole, UserStatus } from '../../../generated/prisma/browser';
-import logger, { createLogger } from '../../lib/logger';
 
 const authLogger = createLogger('AuthService');
 
@@ -83,18 +82,7 @@ const registerUser = async (payload: IRegisterUser) => {
     throw new AppError(httpStatus.BAD_REQUEST, 'Failed to register user');
   }
 
-  const dbUser = await prisma.$transaction(async (tx) => {
-    // const user = await tx.user.upsert({
-    //   where: { id: response.user!.id },
-    //   update: {},
-    //   create: {
-    //     id: response.user!.id,
-    //     email: response.user!.email,
-    //     name: response.user!.name,
-    //     role: response.user!.role,
-    //   },
-    // });
-
+  await prisma.$transaction(async (tx) => {
     await ensureAccountProfile(tx, response.user!.id, response.user!.role);
     return response.user;
   });

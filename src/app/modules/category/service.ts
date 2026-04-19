@@ -1,6 +1,7 @@
 import httpStatus from 'http-status';
 import { prisma } from '../../lib/prisma';
 import AppError from '../../errorHelpers/AppError';
+import { logger } from '../../lib/logger';
 
 const createCategory = async (payload: { title: string; description?: string }) => {
   const existingCategory = await prisma.jobCategory.findFirst({
@@ -8,6 +9,8 @@ const createCategory = async (payload: { title: string; description?: string }) 
       title: payload.title,
     },
   });
+
+  logger.info('Checking for existing category with title', { title: payload.title });
 
   if (existingCategory) {
     throw new AppError(httpStatus.CONFLICT, 'Category already exists');

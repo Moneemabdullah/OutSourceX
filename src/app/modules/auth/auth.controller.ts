@@ -20,6 +20,16 @@ const registerUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const verifyEmail = catchAsync(async (req: Request, res: Response) => {
+  const result = await authService.verifyEmail(req.body);
+  sendResponse(res, {
+    httpStatusCode: status.OK,
+    success: true,
+    message: 'Email verified successfully',
+    data: result,
+  });
+});
+
 const loginUser = catchAsync(async (req: Request, res: Response) => {
   const result = await authService.loginUser(req.body);
 
@@ -114,4 +124,5 @@ export const authController = {
   forgotPassword,
   resetPassword,
   getMe,
+  verifyEmail,
 };

@@ -44,6 +44,9 @@ const envSchema = z.object({
 
   STRIPE_SECRET_KEY: z.string().min(1),
   STRIPE_WEBHOOK_SECRET: z.string().min(1),
+
+  SUPER_ADMIN_EMAIL: z.string().email(),
+  SUPER_ADMIN_PASSWORD: z.string().min(8),
 });
 
 /**
@@ -105,6 +108,11 @@ const loadEnvVariable = () => {
     STRIPE_: {
       SECRET_KEY: env.STRIPE_SECRET_KEY,
       WEBHOOK_SECRET: env.STRIPE_WEBHOOK_SECRET,
+    },
+
+    SUPER_ADMIN_: {
+      EMAIL: env.SUPER_ADMIN_EMAIL,
+      PASSWORD: env.SUPER_ADMIN_PASSWORD,
     },
   };
 };

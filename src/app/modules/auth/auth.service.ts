@@ -8,6 +8,7 @@ import { sendEmail } from '../../utils/emailService';
 import { IRequestUser } from '../../interfaces/requestUser.interface';
 import { prisma } from '../../lib/prisma';
 import { Prisma, UserRole, UserStatus } from '../../../generated/prisma/browser';
+import { createLogger } from '../../lib/logger';
 
 const authLogger = createLogger('AuthService');
 
@@ -96,6 +97,8 @@ const registerUser = async (payload: IRegisterUser) => {
       role: response.user!.role,
     },
   });
+
+  authLogger.info('New user registered', { userId: response.user.id, email: response.user.email });
 
   const tokenUser: TAuthUser = {
     id: response.user!.id,
@@ -188,6 +191,24 @@ const changePassword = async (
   });
 };
 
+const verifyEmail = async (payload: { email: string; otp: string }) => {
+  const user = await prisma.user.findUnique({
+    where: { email: payload.email },
+  });
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+  if (user.emailVerified) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Email already verified');
+  }
+  return auth.api.verifyEmailOTP({
+    body: {
+      email: payload.email,
+      otp: payload.otp,
+    },
+  });
+};
+
 const forgotPassword = async (email: string) => {
   const user = await prisma.user.findUnique({
     where: { email },
@@ -260,4 +281,5 @@ export const authService = {
   forgotPassword,
   resetPassword,
   getMe,
+  verifyEmail,
 };

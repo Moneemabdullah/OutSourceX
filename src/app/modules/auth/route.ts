@@ -25,6 +25,8 @@ router.post(
   validateRequest(authValidation.resetPassword),
   authController.resetPassword
 );
+router.post('/verify-email', authController.verifyEmail);
+
 router.get(
   '/me',
   CheckAuth(UserRole.CLIENT, UserRole.FREELANCER, UserRole.ADMIN, UserRole.SUPER_ADMIN),

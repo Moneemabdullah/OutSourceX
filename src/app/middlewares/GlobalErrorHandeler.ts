@@ -1,15 +1,15 @@
 import { NextFunction, Request, Response } from 'express';
 import status from 'http-status';
 import z from 'zod';
+import { deleteFileFromCloudinary } from '../config/cloudinary.config';
 import { envVars } from '../config/env.utils';
 import AppError from '../errorHelpers/AppError';
 import { handleZodError } from '../errorHelpers/handleZodError';
 import { IErrorResponse, TErrorSource } from '../interfaces/error.interface';
-import { deleteFileFromCloudinary } from '../config/cloudinary.config';
 import { logger } from '../lib/logger';
 
 export const globalErrorHandler = async (
-  err: any,
+  err: unknown,
   req: Request,
   res: Response,
   _next: NextFunction
@@ -36,8 +36,8 @@ export const globalErrorHandler = async (
   } else {
     logger.error(
       {
-        error: err?.message || err,
-        stack: envVars.NODE_ENV === 'development' ? err.stack : undefined,
+        error: err instanceof Error ? err.message : String(err),
+        stack: envVars.NODE_ENV === 'development' && err instanceof Error ? err.stack : undefined,
         path: req.path,
         method: req.method,
       },
@@ -57,8 +57,8 @@ export const globalErrorHandler = async (
 
   let errorSource: TErrorSource[] = [];
   let statusCode: number = status.INTERNAL_SERVER_ERROR;
-  let message: string = err.message || 'Internal Server Error';
-  let stack: string | undefined = err.stack;
+  let message: string = err instanceof Error ? err.message : 'Internal Server Error';
+  let stack: string | undefined = err instanceof Error ? err.stack : undefined;
 
   if (err instanceof z.ZodError) {
     const simplifiedError = handleZodError(err);

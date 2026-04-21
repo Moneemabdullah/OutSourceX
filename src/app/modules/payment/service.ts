@@ -1,11 +1,14 @@
 import httpStatus from 'http-status';
 import { randomUUID } from 'node:crypto';
+import { Prisma } from '../../../generated/prisma/client';
+import { UserRole } from '../../../generated/prisma/enums';
+import AppError from '../../errorHelpers/AppError';
+import { IQueryParams } from '../../interfaces/Query.interface';
 import { IRequestUser } from '../../interfaces/requestUser.interface';
 import { prisma } from '../../lib/prisma';
-import AppError from '../../errorHelpers/AppError';
-import { notificationUtils } from '../../utils/notification';
-import { Prisma } from '../../../generated/prisma/client';
 import { sendEmail } from '../../utils/emailService';
+import { notificationUtils } from '../../utils/notification';
+import { QueryBuilder } from '../../utils/QueryBuilder';
 
 const createEscrowPayment = async (
   user: IRequestUser,
@@ -180,7 +183,83 @@ const releasePayment = async (user: IRequestUser, paymentId: string) => {
   return releasedPayment;
 };
 
+const getPayments = async (user: IRequestUser, query: IQueryParams) => {
+  const queryBuilder = new QueryBuilder(prisma.payment, query, {
+    searchableFields: ['transactionId', 'contract.title', 'contract.job.title'],
+    filterableFields: ['status', 'contractID', 'amount'],
+  });
+
+  if (user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN) {
+    return queryBuilder
+      .search()
+      .filter()
+      .sort()
+      .paginate()
+      .include({
+        contract: {
+          include: {
+            job: true,
+            client: {
+              include: {
+                user: true,
+              },
+            },
+            freelancer: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        },
+      })
+      .execute();
+  }
+
+  return queryBuilder
+    .where({
+      OR: [
+        {
+          contract: {
+            client: {
+              userID: user.userId,
+            },
+          },
+        },
+        {
+          contract: {
+            freelancer: {
+              userID: user.userId,
+            },
+          },
+        },
+      ],
+    })
+    .search()
+    .filter()
+    .sort()
+    .paginate()
+    .include({
+      contract: {
+        include: {
+          job: true,
+          client: {
+            include: {
+              user: true,
+            },
+          },
+          freelancer: {
+            include: {
+              user: true,
+            },
+          },
+        },
+      },
+    })
+    .execute();
+};
+
 export const paymentService = {
+  getPayments,
   createEscrowPayment,
   releasePayment,
 };

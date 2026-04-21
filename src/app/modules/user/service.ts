@@ -1,10 +1,10 @@
 import httpStatus from 'http-status';
+import { UserRole } from '../../../generated/prisma/enums';
+import AppError from '../../errorHelpers/AppError';
+import { IQueryParams } from '../../interfaces/Query.interface';
 import { IRequestUser } from '../../interfaces/requestUser.interface';
 import { prisma } from '../../lib/prisma';
-import AppError from '../../errorHelpers/AppError';
 import { QueryBuilder } from '../../utils/QueryBuilder';
-import { IQueryParams } from '../../interfaces/Query.interface';
-import { UserRole } from '../../../generated/prisma/enums';
 
 const getMyAccount = async (user: IRequestUser) => {
   const account = await prisma.user.findUnique({
@@ -37,6 +37,49 @@ const getAllUsers = async (query: IQueryParams) => {
   });
 
   return queryBuilder.search().filter().sort().paginate().execute();
+};
+
+const getFreelancers = async (query: IQueryParams) => {
+  const queryBuilder = new QueryBuilder(prisma.freelancer, query, {
+    searchableFields: ['user.name', 'user.email', 'bio', 'expertise.title'],
+    filterableFields: ['expertiseID', 'hourlyRate'],
+  });
+
+  return queryBuilder
+    .where({
+      isDeleted: false,
+      user: {
+        isDeleted: false,
+        role: UserRole.FREELANCER,
+      },
+    })
+    .search()
+    .filter()
+    .sort()
+    .paginate()
+    .include({
+      user: true,
+      expertise: true,
+      reviews: true,
+    })
+    .execute();
+};
+
+const getFreelancerById = async (freelancerId: string) => {
+  const freelancer = await prisma.freelancer.findUnique({
+    where: { id: freelancerId },
+    include: {
+      user: true,
+      expertise: true,
+      reviews: true,
+    },
+  });
+
+  if (!freelancer || freelancer.isDeleted || freelancer.user.isDeleted) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Freelancer not found');
+  }
+
+  return freelancer;
 };
 
 const getMonthlyChartData = <
@@ -202,6 +245,7 @@ const getSuperAdminDashboard = async () => {
   return {
     role: UserRole.SUPER_ADMIN,
     totals: {
+      totalUsers: users.length,
       totalSystemRevenue: payments.reduce((sum, payment) => sum + payment.amount, 0),
       totalTransactions: payments.length,
     },
@@ -329,6 +373,8 @@ const getDisputes = async () => {
 };
 
 export const userService = {
+  getFreelancers,
+  getFreelancerById,
   getMyAccount,
   updateMyAccount,
   getAllUsers,

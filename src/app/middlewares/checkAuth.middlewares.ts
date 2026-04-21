@@ -1,13 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
 import status from 'http-status';
 
+import { UserRole, UserStatus } from '../../generated/prisma/enums';
+import { envVars } from '../config/env.utils';
 import AppError from '../errorHelpers/AppError';
 import { prisma } from '../lib/prisma';
 import { cookieUtils } from '../utils/cookie';
 import { jwtUtils } from '../utils/jwt';
-import { role } from 'better-auth/client';
-import { UserRole, UserStatus } from '../../generated/prisma/enums';
-import { envVars } from '../config/env.utils';
 
 export const CheckAuth =
   (...authRoles: UserRole[]) =>

@@ -1,8 +1,8 @@
 import httpStatus from 'http-status';
-import { prisma } from '../../lib/prisma';
 import AppError from '../../errorHelpers/AppError';
-import { IRequestUser } from '../../interfaces/requestUser.interface';
 import { IQueryParams } from '../../interfaces/Query.interface';
+import { IRequestUser } from '../../interfaces/requestUser.interface';
+import { prisma } from '../../lib/prisma';
 import { QueryBuilder } from '../../utils/QueryBuilder';
 
 const getClientProfileId = async (userId: string) => {
@@ -146,9 +146,31 @@ const getJobs = async (query: IQueryParams) => {
     .execute();
 };
 
+const getJob = async (jobId: string) => {
+  const job = await prisma.job.findUnique({
+    where: { id: jobId },
+    include: {
+      category: true,
+      owner: {
+        include: {
+          user: true,
+        },
+      },
+      proposals: true,
+    },
+  });
+
+  if (!job) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Job not found');
+  }
+
+  return job;
+};
+
 export const jobService = {
   createJob,
   updateJob,
   deleteJob,
   getJobs,
+  getJob,
 };

@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import httpStatus from 'http-status';
-import { jobService } from './service';
-import catchAsync from '../../shared/catchAsync';
 import AppError from '../../errorHelpers/AppError';
-import { sendResponse } from '../../shared/sendResponse';
 import { IQueryParams } from '../../interfaces/Query.interface';
+import catchAsync from '../../shared/catchAsync';
+import { sendResponse } from '../../shared/sendResponse';
+import { jobService } from './service';
 
 const createJob = catchAsync(async (req: Request, res: Response) => {
   if (!req.user) {
@@ -62,9 +62,21 @@ const getJobs = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getJob = catchAsync(async (req: Request, res: Response) => {
+  const result = await jobService.getJob(String(req.params.jobId));
+
+  sendResponse(res, {
+    httpStatusCode: httpStatus.OK,
+    success: true,
+    message: 'Job fetched successfully',
+    data: result,
+  });
+});
+
 export const jobController = {
   createJob,
   updateJob,
   deleteJob,
   getJobs,
+  getJob,
 };

@@ -20,7 +20,7 @@ interface ISendEmailOptions {
   to: string;
   subject: string;
   template: string;
-  templateData: Record<string, any>;
+  templateData: Record<string, unknown>;
   attachments?: {
     filename: string;
     content: Buffer | string;
@@ -52,7 +52,8 @@ export const sendEmail = async ({
       })),
     });
     return info;
-  } catch (error: any) {
-    throw new AppError(status.BAD_REQUEST, `Failed to send email: ${error.message}`);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new AppError(status.BAD_REQUEST, `Failed to send email: ${message}`);
   }
 };

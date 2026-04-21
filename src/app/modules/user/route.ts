@@ -1,10 +1,13 @@
 import { Router } from 'express';
+import { UserRole } from '../../../generated/prisma/enums';
+import { CheckAuth, validateRequest } from '../../middlewares';
 import { userController } from './controller';
 import { userValidation } from './validation';
-import { CheckAuth, validateRequest } from '../../middlewares';
-import { UserRole } from '../../../generated/prisma/enums';
 
 const router = Router();
+
+router.get('/freelancers', userController.getFreelancers);
+router.get('/freelancers/:freelancerId', userController.getFreelancerById);
 
 router.get('/', CheckAuth(UserRole.ADMIN, UserRole.SUPER_ADMIN), userController.getAllUsers);
 router.get(

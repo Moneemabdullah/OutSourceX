@@ -6,7 +6,10 @@ const registerUser = z.object({
     name: z.string().min(2),
     email: z.string().email(),
     password: z.string().min(8),
-    role: z.enum([UserRole.CLIENT, UserRole.FREELANCER, UserRole.SUPER_ADMIN]).optional(),
+    role: z.preprocess(
+      (val) => (typeof val === 'string' ? val.toUpperCase() : val),
+      z.enum([UserRole.CLIENT, UserRole.FREELANCER, UserRole.SUPER_ADMIN]).optional()
+    ),
   }),
 });
 
@@ -39,10 +42,18 @@ const resetPassword = z.object({
   }),
 });
 
+const verifyEmail = z.object({
+  body: z.object({
+    email: z.string().email(),
+    otp: z.string().min(4),
+  }),
+});
+
 export const authValidation = {
   registerUser,
   loginUser,
   changePassword,
   forgotPassword,
   resetPassword,
+  verifyEmail,
 };

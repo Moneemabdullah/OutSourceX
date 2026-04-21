@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 
-import { userService } from './service';
-import catchAsync from '../../shared/catchAsync';
 import AppError from '../../errorHelpers/AppError';
-import { sendResponse } from '../../shared/sendResponse';
 import { IQueryParams } from '../../interfaces/Query.interface';
+import catchAsync from '../../shared/catchAsync';
+import { sendResponse } from '../../shared/sendResponse';
+import { userService } from './service';
 
 const getMyAccount = catchAsync(async (req: Request, res: Response) => {
   if (!req.user) {
@@ -44,6 +44,28 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     httpStatusCode: httpStatus.OK,
     success: true,
     message: 'Users fetched successfully',
+    data: result,
+  });
+});
+
+const getFreelancers = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.getFreelancers(req.query as unknown as IQueryParams);
+
+  sendResponse(res, {
+    httpStatusCode: httpStatus.OK,
+    success: true,
+    message: 'Freelancers fetched successfully',
+    data: result,
+  });
+});
+
+const getFreelancerById = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.getFreelancerById(String(req.params.freelancerId));
+
+  sendResponse(res, {
+    httpStatusCode: httpStatus.OK,
+    success: true,
+    message: 'Freelancer fetched successfully',
     data: result,
   });
 });
@@ -108,6 +130,8 @@ const getDisputes = catchAsync(async (_req: Request, res: Response) => {
 });
 
 export const userController = {
+  getFreelancers,
+  getFreelancerById,
   getMyAccount,
   updateMyAccount,
   getAllUsers,

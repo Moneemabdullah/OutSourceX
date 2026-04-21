@@ -1,9 +1,25 @@
 import { Request, Response } from 'express';
 import httpStatus from 'http-status';
-import { paymentService } from './service';
-import catchAsync from '../../shared/catchAsync';
 import AppError from '../../errorHelpers/AppError';
+import { IQueryParams } from '../../interfaces/Query.interface';
+import catchAsync from '../../shared/catchAsync';
 import { sendResponse } from '../../shared/sendResponse';
+import { paymentService } from './service';
+
+const getPayments = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'Unauthorized access');
+  }
+
+  const result = await paymentService.getPayments(req.user, req.query as unknown as IQueryParams);
+
+  sendResponse(res, {
+    httpStatusCode: httpStatus.OK,
+    success: true,
+    message: 'Payments fetched successfully',
+    data: result,
+  });
+});
 
 const createEscrowPayment = catchAsync(async (req: Request, res: Response) => {
   if (!req.user) {
@@ -36,6 +52,7 @@ const releasePayment = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const paymentController = {
+  getPayments,
   createEscrowPayment,
   releasePayment,
 };

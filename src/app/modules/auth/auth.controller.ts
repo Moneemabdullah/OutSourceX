@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import status from 'http-status';
-import { authService } from './auth.service';
+import AppError from '../../errorHelpers/AppError';
+import catchAsync from '../../shared/catchAsync';
 import { sendResponse } from '../../shared/sendResponse';
 import { tokenUtils } from '../../utils/token';
-import catchAsync from '../../shared/catchAsync';
-import AppError from '../../errorHelpers/AppError';
+import { authService } from './auth.service';
 
 const registerUser = catchAsync(async (req: Request, res: Response) => {
   const result = await authService.registerUser(req.body);
@@ -44,6 +44,28 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
     success: true,
     message: 'User logged in successfully',
     data: result.user,
+  });
+});
+
+const logoutUser = catchAsync(async (req: Request, res: Response) => {
+  await authService.logoutUser(req.headers as HeadersInit);
+
+  const clearCookieOptions = {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none' as const,
+    path: '/',
+  };
+
+  res.clearCookie('accessToken', clearCookieOptions);
+  res.clearCookie('refreshToken', clearCookieOptions);
+  res.clearCookie('better-auth-session-token', clearCookieOptions);
+
+  sendResponse(res, {
+    httpStatusCode: status.OK,
+    success: true,
+    message: 'User logged out successfully',
+    data: null,
   });
 });
 
@@ -119,6 +141,7 @@ const getMe = catchAsync(async (req: Request, res: Response) => {
 export const authController = {
   registerUser,
   loginUser,
+  logoutUser,
   getGoogleOAuthUrl,
   changePassword,
   forgotPassword,

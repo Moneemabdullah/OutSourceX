@@ -1,10 +1,10 @@
 import httpStatus from 'http-status';
+import AppError from '../../errorHelpers/AppError';
+import { IQueryParams } from '../../interfaces/Query.interface';
 import { IRequestUser } from '../../interfaces/requestUser.interface';
 import { prisma } from '../../lib/prisma';
-import AppError from '../../errorHelpers/AppError';
 import { notificationUtils } from '../../utils/notification';
 import { QueryBuilder } from '../../utils/QueryBuilder';
-import { IQueryParams } from '../../interfaces/Query.interface';
 
 const createContractFromProposal = async (
   user: IRequestUser,
@@ -123,6 +123,7 @@ const getContracts = async (user: IRequestUser, query: IQueryParams) => {
     .paginate()
     .include({
       job: true,
+      payment: true,
       freelancer: {
         include: {
           user: true,

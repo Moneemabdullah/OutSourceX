@@ -1,7 +1,10 @@
-import { prisma } from '../lib/prisma.js';
 import { UserRole } from '../../generated/prisma/enums.js';
 import { envVars } from '../config/env.utils.js';
 import AppError from '../errorHelpers/AppError.js';
+import { createLogger } from '../lib/logger.js';
+import { prisma } from '../lib/prisma.js';
+
+const seedLogger = createLogger('seedSuperAdmin');
 
 async function seedSuperUser() {
   const email = envVars.SUPER_ADMIN_.EMAIL;
@@ -12,18 +15,18 @@ async function seedSuperUser() {
   }
 
   try {
-    console.log('🔍 Checking for existing super admin...');
+    seedLogger.info('Checking for existing super admin...');
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
 
     if (existingUser) {
-      console.log('⚠️ Super admin already exists. Skipping...');
+      seedLogger.warn('Super admin already exists. Skipping...');
       return;
     }
 
-    console.log('🚀 Creating super admin...');
+    seedLogger.info('Creating super admin...');
 
     const response = await fetch(`${envVars.BETTER_AUTH_URL}/api/v1/auth/register`, {
       method: 'POST',
@@ -47,9 +50,9 @@ async function seedSuperUser() {
       data: { emailVerified: true },
     });
 
-    console.log('✅ Super admin created & verified successfully');
+    seedLogger.info('Super admin created and verified successfully');
   } catch (err) {
-    console.error('❌ Seed failed:', err);
+    seedLogger.error('Seed failed', err);
   } finally {
     await prisma.$disconnect();
   }

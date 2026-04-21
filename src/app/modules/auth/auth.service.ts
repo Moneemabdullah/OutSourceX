@@ -1,14 +1,14 @@
 import httpStatus from 'http-status';
 import { ILoginUser, IRegisterUser } from './user.interface';
 
-import { tokenUtils } from '../../utils/token';
-import { auth } from '../../lib/auth';
-import AppError from '../../errorHelpers/AppError';
-import { sendEmail } from '../../utils/emailService';
-import { IRequestUser } from '../../interfaces/requestUser.interface';
-import { prisma } from '../../lib/prisma';
 import { Prisma, UserRole, UserStatus } from '../../../generated/prisma/browser';
+import AppError from '../../errorHelpers/AppError';
+import { IRequestUser } from '../../interfaces/requestUser.interface';
+import { auth } from '../../lib/auth';
 import { createLogger } from '../../lib/logger';
+import { prisma } from '../../lib/prisma';
+import { sendEmail } from '../../utils/emailService';
+import { tokenUtils } from '../../utils/token';
 
 const authLogger = createLogger('AuthService');
 
@@ -82,32 +82,33 @@ const registerUser = async (payload: IRegisterUser) => {
   if (!response.user) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Failed to register user');
   }
+  const createdUser = response.user;
 
   await prisma.$transaction(async (tx) => {
-    await ensureAccountProfile(tx, response.user!.id, response.user!.role);
-    return response.user;
+    await ensureAccountProfile(tx, createdUser.id, createdUser.role);
+    return createdUser;
   });
 
   await sendEmail({
-    to: response.user!.email,
+    to: createdUser.email,
     subject: 'Welcome to OutsourceX',
     template: 'welcome',
     templateData: {
-      name: response.user!.name,
-      role: response.user!.role,
+      name: createdUser.name,
+      role: createdUser.role,
     },
   });
 
   authLogger.info('New user registered', { userId: response.user.id, email: response.user.email });
 
   const tokenUser: TAuthUser = {
-    id: response.user!.id,
-    email: response.user!.email,
-    name: response.user!.name || '',
-    role: response.user!.role,
-    status: response.user!.status,
-    isDeleted: response.user!.isDeleted,
-    emailVerified: response.user!.emailVerified,
+    id: createdUser.id,
+    email: createdUser.email,
+    name: createdUser.name || '',
+    role: createdUser.role,
+    status: createdUser.status,
+    isDeleted: createdUser.isDeleted,
+    emailVerified: createdUser.emailVerified,
   };
 
   return {
@@ -127,19 +128,26 @@ const loginUser = async (payload: ILoginUser) => {
   if (!response.user) {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Invalid email or password');
   }
+  const signedInUser = response.user;
 
-  if (response.user.status === UserStatus.SUSPENDED || response.user.isDeleted) {
+  if (signedInUser.status === UserStatus.SUSPENDED || signedInUser.isDeleted) {
     throw new AppError(httpStatus.FORBIDDEN, 'This account is not allowed to sign in');
   }
 
   await prisma.$transaction(async (tx) => {
-    await ensureAccountProfile(tx, response.user!.id, response.user!.role as UserRole);
+    await ensureAccountProfile(tx, signedInUser.id, signedInUser.role as UserRole);
   });
 
   return {
     user: response,
-    ...issueTokens(response.user as TAuthUser),
+    ...issueTokens(signedInUser as TAuthUser),
   };
+};
+
+const logoutUser = async (headers?: HeadersInit) => {
+  return auth.api.signOut({
+    headers,
+  });
 };
 
 const getGoogleOAuthUrl = async (payload?: {
@@ -276,6 +284,7 @@ const getMe = async (user: IRequestUser) => {
 export const authService = {
   registerUser,
   loginUser,
+  logoutUser,
   getGoogleOAuthUrl,
   changePassword,
   forgotPassword,

@@ -1,12 +1,13 @@
 import { Router } from 'express';
+import { UserRole } from '../../../generated/prisma/enums';
+import { CheckAuth, validateRequest } from '../../middlewares';
 import { jobController } from './controller';
 import { jobValidation } from './validation';
-import { CheckAuth, validateRequest } from '../../middlewares';
-import { UserRole } from '../../../generated/prisma/enums';
 
 const router = Router();
 
 router.get('/', jobController.getJobs);
+router.get('/:jobId', jobController.getJob);
 router.post(
   '/',
   CheckAuth(UserRole.CLIENT),

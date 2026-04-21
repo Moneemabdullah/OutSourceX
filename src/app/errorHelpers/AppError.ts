@@ -1,5 +1,3 @@
-import { logger } from '../lib/logger';
-
 class AppError extends Error {
   public statusCode: number;
 

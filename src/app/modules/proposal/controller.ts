@@ -31,7 +31,22 @@ const acceptProposal = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     httpStatusCode: httpStatus.OK,
     success: true,
-    message: 'Proposal accepted successfully',
+    message: 'Proposal accepted and contract created',
+    data: result,
+  });
+});
+
+const rejectProposal = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'Unauthorized access');
+  }
+
+  const result = await proposalService.rejectProposal(req.user, String(req.params.proposalId));
+
+  sendResponse(res, {
+    httpStatusCode: httpStatus.OK,
+    success: true,
+    message: 'Proposal rejected',
     data: result,
   });
 });
@@ -68,6 +83,7 @@ const getProposals = catchAsync(async (req: Request, res: Response) => {
 export const proposalController = {
   applyToJob,
   acceptProposal,
+  rejectProposal,
   getJobProposals,
   getProposals,
 };

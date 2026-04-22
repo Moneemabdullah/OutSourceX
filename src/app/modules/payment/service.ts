@@ -1,7 +1,6 @@
+import { Prisma, UserRole } from '@prisma/client';
 import httpStatus from 'http-status';
 import { randomUUID } from 'node:crypto';
-import { Prisma } from '../../../generated/prisma/client';
-import { UserRole } from '../../../generated/prisma/enums';
 import AppError from '../../errorHelpers/AppError';
 import { IQueryParams } from '../../interfaces/Query.interface';
 import { IRequestUser } from '../../interfaces/requestUser.interface';

@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import { ILoginUser, IRegisterUser } from './user.interface';
 
-import { Prisma, UserRole, UserStatus } from '../../../generated/prisma/browser';
+import { Prisma, UserRole, UserStatus } from '@prisma/client';
 import AppError from '../../errorHelpers/AppError';
 import { IRequestUser } from '../../interfaces/requestUser.interface';
 import { auth } from '../../lib/auth';
@@ -145,8 +145,10 @@ const loginUser = async (payload: ILoginUser) => {
 };
 
 const logoutUser = async (headers?: HeadersInit) => {
+  const safeHeaders: HeadersInit = headers ?? {};
+
   return auth.api.signOut({
-    headers,
+    headers: safeHeaders,
   });
 };
 
@@ -195,7 +197,7 @@ const changePassword = async (
       newPassword: payload.newPassword,
       revokeOtherSessions: payload.revokeOtherSessions,
     },
-    headers,
+    ...(headers ? { headers } : {}),
   });
 };
 

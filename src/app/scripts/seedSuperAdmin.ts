@@ -1,4 +1,4 @@
-import { UserRole } from '../../generated/prisma/enums.js';
+import { UserRole } from '@prisma/client';
 import { envVars } from '../config/env.utils.js';
 import AppError from '../errorHelpers/AppError.js';
 import { createLogger } from '../lib/logger.js';

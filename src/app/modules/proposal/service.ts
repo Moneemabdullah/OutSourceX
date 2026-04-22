@@ -1,11 +1,12 @@
 import httpStatus from 'http-status';
+import { randomUUID } from 'node:crypto';
 import AppError from '../../errorHelpers/AppError';
-import { prisma } from '../../lib/prisma';
-import { IRequestUser } from '../../interfaces/requestUser.interface';
-import { notificationUtils } from '../../utils/notification';
-import { sendEmail } from '../../utils/emailService';
-import { QueryBuilder } from '../../utils/QueryBuilder';
 import { IQueryParams } from '../../interfaces/Query.interface';
+import { IRequestUser } from '../../interfaces/requestUser.interface';
+import { prisma } from '../../lib/prisma';
+import { sendEmail } from '../../utils/emailService';
+import { notificationUtils } from '../../utils/notification';
+import { QueryBuilder } from '../../utils/QueryBuilder';
 
 const getFreelancerProfileId = async (userId: string) => {
   const freelancer = await prisma.freelancer.findFirst({
@@ -129,15 +130,34 @@ const acceptProposal = async (user: IRequestUser, proposalId: string) => {
     },
   });
 
+  const contract = await prisma.contract.create({
+    data: {
+      title: proposal.job.title,
+      jobID: proposal.jobID,
+      clientID: proposal.job.ownerID,
+      freelancerID: proposal.freelancerID,
+      proposalID: proposalId,
+    },
+  });
+
+  await prisma.payment.create({
+    data: {
+      contractID: contract.id,
+      amount: proposal.bidAmount,
+      transactionId: randomUUID(),
+      status: 'PENDING',
+    },
+  });
+
   await notificationUtils.createNotification({
     userId: proposal.freelancer.user.id,
     title: 'Proposal accepted',
-    message: `Your proposal for "${proposal.job.title}" has been accepted.`,
+    message: `Your proposal for "${proposal.job.title}" has been accepted. Contract created!`,
   });
 
   await sendEmail({
     to: proposal.freelancer.user.email,
-    subject: 'Proposal accepted',
+    subject: 'Proposal accepted - Contract created',
     template: 'proposalAccepted',
     templateData: {
       name: proposal.freelancer.user.name,
@@ -146,7 +166,55 @@ const acceptProposal = async (user: IRequestUser, proposalId: string) => {
     },
   });
 
-  return acceptedProposal;
+  return {
+    ...acceptedProposal,
+    contract,
+  };
+};
+
+const rejectProposal = async (user: IRequestUser, proposalId: string) => {
+  const proposal = await prisma.proposal.findUnique({
+    where: { id: proposalId },
+    include: {
+      job: {
+        include: {
+          owner: {
+            include: {
+              user: true,
+            },
+          },
+        },
+      },
+      freelancer: {
+        include: {
+          user: true,
+        },
+      },
+    },
+  });
+
+  if (!proposal) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Proposal not found');
+  }
+
+  if (proposal.job.owner.user.id !== user.userId) {
+    throw new AppError(httpStatus.FORBIDDEN, 'You cannot reject this proposal');
+  }
+
+  const rejectedProposal = await prisma.proposal.update({
+    where: { id: proposalId },
+    data: {
+      status: 'REJECTED',
+    },
+  });
+
+  await notificationUtils.createNotification({
+    userId: proposal.freelancer.user.id,
+    title: 'Proposal rejected',
+    message: `Your proposal for "${proposal.job.title}" has been rejected.`,
+  });
+
+  return rejectedProposal;
 };
 
 const getJobProposals = async (jobId: string, query: IQueryParams) => {
@@ -223,6 +291,7 @@ const getProposals = async (user: IRequestUser, query: IQueryParams) => {
 export const proposalService = {
   applyToJob,
   acceptProposal,
+  rejectProposal,
   getJobProposals,
   getProposals,
 };

@@ -23,8 +23,8 @@ export interface PrismaCountArguments {
 }
 
 export interface PrismaModelDelegate {
-  findMany(args?: PrismaFindManyArguments): Promise<unknown[]>;
-  count(args?: PrismaCountArguments): Promise<number>;
+  findMany(...args: unknown[]): Promise<unknown[]>;
+  count(...args: unknown[]): Promise<number>;
 }
 
 export interface IQueryParams {

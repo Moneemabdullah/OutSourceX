@@ -1,9 +1,12 @@
+import { UserRole, UserStatus } from '@prisma/client';
 import httpStatus from 'http-status';
-import { UserRole } from '../../../generated/prisma/enums';
+import { randomUUID } from 'node:crypto';
 import AppError from '../../errorHelpers/AppError';
 import { IQueryParams } from '../../interfaces/Query.interface';
 import { IRequestUser } from '../../interfaces/requestUser.interface';
+import { auth } from '../../lib/auth';
 import { prisma } from '../../lib/prisma';
+import { sendEmail } from '../../utils/emailService';
 import { QueryBuilder } from '../../utils/QueryBuilder';
 
 const getMyAccount = async (user: IRequestUser) => {
@@ -372,6 +375,57 @@ const getDisputes = async () => {
   };
 };
 
+const createAdmin = async (payload: { name: string; email: string }) => {
+  const existingUser = await prisma.user.findUnique({
+    where: { email: payload.email },
+  });
+
+  if (existingUser) {
+    throw new AppError(httpStatus.CONFLICT, 'User with this email already exists');
+  }
+
+  const tempPassword = randomUUID().slice(0, 12);
+
+  const response = (await auth.api.signUpEmail({
+    body: {
+      email: payload.email,
+      password: tempPassword,
+      name: payload.name,
+      role: UserRole.ADMIN,
+    },
+  })) as { user?: { id: string } };
+
+  if (!response.user) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Failed to create admin user');
+  }
+
+  await prisma.user.update({
+    where: { id: response.user.id },
+    data: {
+      emailVerified: true,
+      status: UserStatus.ACTIVE,
+    },
+  });
+
+  await sendEmail({
+    to: payload.email,
+    subject: 'Your Admin Account',
+    template: 'adminCredentials',
+    templateData: {
+      name: payload.name,
+      email: payload.email,
+      password: tempPassword,
+    },
+  });
+
+  return {
+    id: response.user.id,
+    name: payload.name,
+    email: payload.email,
+    role: UserRole.ADMIN,
+  };
+};
+
 export const userService = {
   getFreelancers,
   getFreelancerById,
@@ -379,6 +433,7 @@ export const userService = {
   updateMyAccount,
   getAllUsers,
   getDashboard,
+  createAdmin,
   promoteAdmin,
   demoteAdmin,
   getTransactions,

@@ -1,5 +1,4 @@
 import express, { Application, Request, Response } from 'express';
-import { globalErrorHandler } from './app/middlewares/GlobalErrorHandeler';
 import notFoundMiddleware from './app/middlewares/notFound';
 import cookieParser from 'cookie-parser';
 import { toNodeHandler } from 'better-auth/node';
@@ -10,6 +9,7 @@ import { envVars } from './app/config/env.utils';
 import { indexRoute } from './app/routes';
 import { logger } from './app/lib/logger';
 import { requestLogger } from './app/middlewares/requestLogger';
+import { globalErrorHandler } from './app/middlewares';
 
 const app: Application = express();
 

@@ -1,7 +1,7 @@
+import { UserRole } from '@prisma/client';
 import { Router } from 'express';
-import { notificationController } from './controller';
 import { CheckAuth } from '../../middlewares';
-import { UserRole } from '../../../generated/prisma/enums';
+import { notificationController } from './controller';
 
 const router = Router();
 

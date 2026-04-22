@@ -85,6 +85,17 @@ const getDashboard = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const createAdmin = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.createAdmin(req.body);
+
+  sendResponse(res, {
+    httpStatusCode: httpStatus.CREATED,
+    success: true,
+    message: 'Admin created successfully',
+    data: result,
+  });
+});
+
 const promoteAdmin = catchAsync(async (req: Request, res: Response) => {
   const result = await userService.promoteAdmin(req.body);
 
@@ -136,6 +147,7 @@ export const userController = {
   updateMyAccount,
   getAllUsers,
   getDashboard,
+  createAdmin,
   promoteAdmin,
   demoteAdmin,
   getTransactions,

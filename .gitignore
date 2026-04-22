@@ -43,3 +43,4 @@ temp/
 
 # prisma generated client
 src/generated
+.vercel

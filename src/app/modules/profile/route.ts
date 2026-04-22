@@ -1,8 +1,8 @@
+import { UserRole } from '@prisma/client';
 import { Router } from 'express';
+import { CheckAuth, validateRequest } from '../../middlewares';
 import { profileController } from './controller';
 import { profileValidation } from './validation';
-import { CheckAuth, validateRequest } from '../../middlewares';
-import { UserRole } from '../../../generated/prisma/enums';
 
 const router = Router();
 

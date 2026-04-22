@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import status from 'http-status';
 
-import { UserRole, UserStatus } from '../../generated/prisma/enums';
+import { UserRole, UserStatus } from '@prisma/client';
 import { envVars } from '../config/env.utils';
 import AppError from '../errorHelpers/AppError';
 import { prisma } from '../lib/prisma';

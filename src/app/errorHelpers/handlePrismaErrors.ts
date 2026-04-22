@@ -1,5 +1,5 @@
+import { Prisma } from '@prisma/client';
 import status from 'http-status';
-import { Prisma } from '../../generated/prisma/client';
 import { IErrorResponse, TErrorSource } from '../interfaces/error.interface';
 
 const getStatusCodeFromPrismaError = (errorCode: string): number => {
@@ -117,7 +117,7 @@ export const handlePrismaClientKnownRequestError = (
   const lines = cleanMessage.split('\n').filter((line) => line.trim());
   const mainMessage = lines[0] || 'An error occurred with the database operation.';
 
-  const errorSources: TErrorSource[] = [
+  const errorSource: TErrorSource[] = [
     {
       path: error.code,
       message: metaInfo ? `${mainMessage} | ${metaInfo}` : mainMessage,
@@ -125,7 +125,7 @@ export const handlePrismaClientKnownRequestError = (
   ];
 
   if (error.meta?.cause) {
-    errorSources.push({
+    errorSource.push({
       path: 'cause',
       message: String(error.meta.cause),
     });
@@ -135,7 +135,7 @@ export const handlePrismaClientKnownRequestError = (
     success: false,
     statusCode,
     message: `Prisma Client Known Request Error: ${mainMessage}`,
-    errorSources,
+    errorSource,
   };
 };
 
@@ -150,7 +150,7 @@ export const handlePrismaClientUnknownError = (
   const lines = cleanMessage.split('\n').filter((line) => line.trim());
   const mainMessage = lines[0] || 'An unknown error occurred with the database operation.';
 
-  const errorSources: TErrorSource[] = [
+  const errorSource: TErrorSource[] = [
     {
       path: 'Unknown Prisma Error',
       message: mainMessage,
@@ -161,7 +161,7 @@ export const handlePrismaClientUnknownError = (
     success: false,
     statusCode: status.INTERNAL_SERVER_ERROR,
     message: `Prisma Client Unknown Request Error: ${mainMessage}`,
-    errorSources,
+    errorSource,
   };
 };
 
@@ -175,7 +175,7 @@ export const handlePrismaClientValidationError = (
 
   const lines = cleanMessage.split('\n').filter((line) => line.trim());
 
-  const errorSources: TErrorSource[] = [];
+  const errorSource: TErrorSource[] = [];
 
   // extract field name for field-specific validation errors
   // Example message: "Argument `data.email`: Got invalid value `invalid-email` on prisma.user.create()"
@@ -189,7 +189,7 @@ export const handlePrismaClientValidationError = (
     lines[0] ||
     'Invalid query parameters provided to the database operation.';
 
-  errorSources.push({
+  errorSource.push({
     path: fieldName,
     message: mainMessage,
   });
@@ -198,7 +198,7 @@ export const handlePrismaClientValidationError = (
     success: false,
     statusCode: status.BAD_REQUEST,
     message: `Prisma Client Validation Error: ${mainMessage}`,
-    errorSources,
+    errorSource,
   };
 };
 
@@ -217,7 +217,7 @@ export const handlerPrismaClientInitializationError = (
 
   const mainMessage = lines[0] || 'An error occurred while initializing the Prisma Client.';
 
-  const errorSources: TErrorSource[] = [
+  const errorSource: TErrorSource[] = [
     {
       path: error.errorCode || 'Initialization Error',
       message: mainMessage,
@@ -228,12 +228,12 @@ export const handlerPrismaClientInitializationError = (
     success: false,
     statusCode,
     message: `Prisma Client Initialization Error: ${mainMessage}`,
-    errorSources,
+    errorSource,
   };
 };
 
 export const handlerPrismaClientRustPanicError = (): IErrorResponse => {
-  const errorSources: TErrorSource[] = [
+  const errorSource: TErrorSource[] = [
     {
       path: 'Rust Engine Crashed',
       message:
@@ -245,6 +245,6 @@ export const handlerPrismaClientRustPanicError = (): IErrorResponse => {
     success: false,
     statusCode: status.INTERNAL_SERVER_ERROR,
     message: 'Prisma Client Rust Panic Error: The database engine crashed due to a fatal error.',
-    errorSources,
+    errorSource,
   };
 };

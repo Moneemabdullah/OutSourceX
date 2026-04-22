@@ -1,5 +1,5 @@
+import { UserRole } from '@prisma/client';
 import { Router } from 'express';
-import { UserRole } from '../../../generated/prisma/enums';
 import { CheckAuth, validateRequest } from '../../middlewares';
 import { userController } from './controller';
 import { userValidation } from './validation';
@@ -21,6 +21,12 @@ router.get(
   userController.getTransactions
 );
 router.get('/disputes', CheckAuth(UserRole.SUPER_ADMIN), userController.getDisputes);
+router.post(
+  '/admins/create',
+  CheckAuth(UserRole.SUPER_ADMIN),
+  validateRequest(userValidation.createAdmin),
+  userController.createAdmin
+);
 router.post(
   '/admins/promote',
   CheckAuth(UserRole.SUPER_ADMIN),

@@ -1,8 +1,8 @@
+import { UserRole } from '@prisma/client';
 import { Router } from 'express';
+import { CheckAuth, validateRequest } from '../../middlewares';
 import { categoryController } from './controller';
 import { categoryValidation } from './validation';
-import { CheckAuth, validateRequest } from '../../middlewares';
-import { UserRole } from '../../../generated/prisma/enums';
 
 const router = Router();
 
@@ -10,13 +10,13 @@ router.get('/', categoryController.getCategories);
 router.post(
   '/',
   CheckAuth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
-  validateRequest(categoryValidation.upsertCategory),
+  validateRequest(categoryValidation.createCategory),
   categoryController.createCategory
 );
 router.patch(
   '/:categoryId',
   CheckAuth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
-  validateRequest(categoryValidation.upsertCategory),
+  validateRequest(categoryValidation.updateCategory),
   categoryController.updateCategory
 );
 router.delete(

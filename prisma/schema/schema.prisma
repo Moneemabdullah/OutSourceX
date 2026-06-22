@@ -6,3 +6,305 @@ generator client {
 datasource db {
     provider = "postgresql"
 }
+
+// ==================== ENUMS ====================
+
+enum ContractStatus {
+    ACTIVE
+    COMPLETED
+    CANCELLED
+    DISPUTED
+}
+
+enum MilestoneStatus {
+    NOT_STARTED
+    IN_PROGRESS
+    COMPLETED
+    BLOCKED
+}
+
+enum PaymentStatus {
+    PENDING
+    ESCROW
+    RELEASED
+    FAILED
+    REFUNDED
+}
+
+enum ProposalStatus {
+    PENDING
+    ACCEPTED
+    REJECTED
+}
+
+enum UserRole {
+    SUPER_ADMIN
+    ADMIN
+    CLIENT
+    FREELANCER
+}
+
+enum UserStatus {
+    ACTIVE
+    INACTIVE
+    SUSPENDED
+}
+
+// ==================== MODELS ====================
+
+model User {
+    id                 String     @id @default(cuid())
+    name               String?
+    email              String     @unique
+    emailVerified      Boolean    @default(false)
+    contactNumber      String?    @map("contact_number")
+    image              String?
+    role               UserRole   @default(FREELANCER)
+    status             UserStatus @default(ACTIVE)
+    needPasswordChange Boolean    @default(false) @map("need_password_reset")
+    isDeleted          Boolean    @default(false) @map("is_deleted")
+
+    deletedAt DateTime? @map("deleted_at")
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
+
+    accounts      Account[]
+    sessions      Session[]
+    clients       Client[]
+    freelancers   Freelancer[]
+    notifications Notification[]
+
+    @@index([email], name: "idx_user_email")
+    @@map("users")
+}
+
+model Session {
+    id        String   @id
+    expiresAt DateTime
+    token     String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    ipAddress String?
+    userAgent String?
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([token])
+    @@index([userId])
+    @@map("session")
+}
+
+model Account {
+    id                    String    @id
+    accountId             String
+    providerId            String
+    userId                String
+    user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    accessToken           String?
+    refreshToken          String?
+    idToken               String?
+    accessTokenExpiresAt  DateTime?
+    refreshTokenExpiresAt DateTime?
+    scope                 String?
+    password              String?
+    createdAt             DateTime  @default(now())
+    updatedAt             DateTime  @updatedAt
+
+    @@index([userId])
+    @@map("account")
+}
+
+model Verification {
+    id         String   @id
+    identifier String
+    value      String
+    expiresAt  DateTime
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    @@index([identifier])
+    @@map("verification")
+}
+
+model Client {
+    id  String  @id @default(cuid())
+    bio String? @db.Text
+
+    userID String @unique @map("user_id")
+    user   User   @relation(fields: [userID], references: [id], onDelete: Cascade)
+
+    jobs      Job[]
+    contracts Contract[]
+    reviews   Review[]
+
+    deletedAt DateTime? @map("deleted_at")
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
+
+    @@index([userID], name: "idx_client_user_id")
+}
+
+model Contract {
+    id          String  @id @default(uuid(7))
+    title       String
+    description String? @db.Text
+
+    jobID String @map("job_id")
+    job   Job    @relation(fields: [jobID], references: [id])
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    freelancerID String     @map("freelancer_id")
+    freelancer   Freelancer @relation(fields: [freelancerID], references: [id])
+
+    clientID String @map("client_id")
+    client   Client @relation(fields: [clientID], references: [id])
+
+    proposalID String   @unique @map("proposal_id")
+    proposal   Proposal @relation(fields: [proposalID], references: [id])
+
+    payment Payment?
+}
+
+model Expertise {
+    id          String  @id @default(uuid())
+    title       String  @unique
+    description String? @db.Text
+
+    createdAt   DateTime     @default(now()) @map("created_at")
+    updatedAt   DateTime     @updatedAt @map("updated_at")
+    freelancers Freelancer[]
+}
+
+model Freelancer {
+    id  String  @id @default(cuid())
+    bio String? @db.Text
+
+    cv         String? @map("cv_url")
+    hourlyRate Float?  @map("hourly_rate")
+
+    expertiseID String?    @map("expertise_id")
+    expertise   Expertise? @relation(fields: [expertiseID], references: [id], onDelete: SetNull)
+
+    userID String @unique @map("user_id")
+    user   User   @relation(fields: [userID], references: [id], onDelete: Cascade)
+
+    contracts Contract[]
+    proposals Proposal[]
+    reviews   Review[]
+
+    isDeleted Boolean   @default(false) @map("is_deleted")
+    deletedAt DateTime? @map("deleted_at")
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
+
+    @@index([userID], name: "idx_freelancer_user_id")
+    @@index([expertiseID], name: "idx_freelancer_expertise_id")
+    @@map("freelancers")
+}
+
+model JobCategory {
+    id          String  @id @default(uuid())
+    title       String  @unique
+    description String? @db.Text
+    budget      Float?  @default(0.0)
+    deadline    DateTime?
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+    jobs      Job[]
+}
+
+model Job {
+    id          String    @id @default(uuid())
+    title       String
+    description String?   @db.Text
+    budget      Float?    @default(0.0)
+    deadline    DateTime?
+
+    ownerID String @map("owner_id")
+    owner   Client @relation(fields: [ownerID], references: [id])
+
+    categoryID String      @map("category_id")
+    category   JobCategory @relation(fields: [categoryID], references: [id])
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    proposals  Proposal[]
+    contracts  Contract[]
+    milestones Milestone[]
+}
+
+model Milestone {
+    id              String          @id @default(uuid())
+    title           String
+    description     String?         @db.Text
+    amount          Float           @default(0.0)
+    dueDate         DateTime?
+    milestoneStatus MilestoneStatus @default(NOT_STARTED) @map("milestone_status")
+
+    jobID String @map("job_id")
+    job   Job    @relation(fields: [jobID], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+model Notification {
+    id      String  @id @default(uuid())
+    title   String
+    message String  @db.Text
+    isRead  Boolean @default(false) @map("is_read")
+
+    userID String @map("user_id")
+    user   User   @relation(fields: [userID], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now()) @map("created_at")
+}
+
+model Payment {
+    id                 String        @id @default(uuid(7))
+    amount             Float
+    transactionId      String        @unique @db.Uuid()
+    stripeEventId      String?       @unique
+    status             PaymentStatus @default(PENDING)
+    paymentGatewayData Json?
+    createdAt          DateTime      @default(now())
+    updatedAt          DateTime      @updatedAt
+
+    contractID String   @unique @map("contract_id")
+    contract   Contract @relation(fields: [contractID], references: [id])
+}
+
+model Proposal {
+    id          String         @id @default(uuid())
+    coverLetter String         @db.Text
+    bidAmount   Float
+    status      ProposalStatus @default(PENDING)
+
+    freelancerID String     @map("freelancer_id")
+    freelancer   Freelancer @relation(fields: [freelancerID], references: [id])
+
+    jobID String @map("job_id")
+    job   Job    @relation(fields: [jobID], references: [id])
+
+    contract Contract?
+
+    createdAt DateTime @default(now()) @map("created_at")
+}
+
+model Review {
+    id      String  @id @default(uuid(7))
+    rating  Float   @default(0.0)
+    comment String? @db.Text
+
+    freelancerID String     @map("freelancer_id")
+    freelancer   Freelancer @relation(fields: [freelancerID], references: [id])
+
+    clientID String @map("client_id")
+    client   Client @relation(fields: [clientID], references: [id])
+
+    createdAt DateTime @default(now()) @map("created_at")
+}

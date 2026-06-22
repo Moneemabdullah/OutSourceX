@@ -1,0 +1,91 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: outsourcex-postgres-dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-outsourcex_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-outsourcex_password}
+      POSTGRES_DB: ${POSTGRES_DB:-outsourcex_dev}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - outsourcex-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-outsourcex_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Adminer for database management (optional)
+  adminer:
+    image: adminer:latest
+    container_name: outsourcex-adminer-dev
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - outsourcex-network
+
+  # Backend Application
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: outsourcex-backend-dev
+    command: npm run dev
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DATABASE_AUTO_MIGRATE: "false"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-outsourcex_user}:${POSTGRES_PASSWORD:-outsourcex_password}@postgres:5432/${POSTGRES_DB:-outsourcex_dev}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-your-secret-key}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:-access-secret-key}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:-refresh-secret-key}
+      ACCESS_TOKEN_EXPIRES_IN: ${ACCESS_TOKEN_EXPIRES_IN:-7d}
+      REFRESH_TOKEN_EXPIRES_IN: ${REFRESH_TOKEN_EXPIRES_IN:-30d}
+      BETTER_AUTH_SESSION_TOKEN_EXPIRES_IN: ${BETTER_AUTH_SESSION_TOKEN_EXPIRES_IN:-7d}
+      BETTER_AUTH_SESSION_TOKEN_UPDATE_AGE: ${BETTER_AUTH_SESSION_TOKEN_UPDATE_AGE:-1d}
+      EMAIL_SENDER_SMTP_HOST: ${EMAIL_SENDER_SMTP_HOST:-localhost}
+      EMAIL_SENDER_SMTP_PORT: ${EMAIL_SENDER_SMTP_PORT:-587}
+      EMAIL_SENDER_SMTP_USER: ${EMAIL_SENDER_SMTP_USER:-user@example.com}
+      EMAIL_SENDER_SMTP_PASS: ${EMAIL_SENDER_SMTP_PASS:-password}
+      EMAIL_SENDER_FROM: ${EMAIL_SENDER_FROM:-noreply@outsourcex.com}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3000/auth/callback}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_xxx}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_xxx}
+      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-admin@outsourcex.com}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-SecurePassword123!}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/dist
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - outsourcex-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  outsourcex-network:
+    driver: bridge

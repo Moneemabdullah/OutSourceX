@@ -2,6 +2,9 @@
   "name": "outsourcex-backend",
   "version": "1.0.0",
   "description": "Production-ready Node.js backend with TypeScript, Prisma, and Better Auth",
+  "prisma": {
+    "schema": "prisma/schema/schema.prisma"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",

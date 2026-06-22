@@ -233,7 +233,27 @@ OutSourceX/
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### With Docker (Recommended for Development)
+
+**Quick Start:**
+
+```bash
+git clone https://github.com/Moneemabdullah/OutSourceX.git
+cd OutSourceX
+cp .env.example .env
+make dev-up      # Starts PostgreSQL + Backend with hot-reload
+make db-push     # Initialize database
+make db-seed     # Create super admin (optional)
+```
+
+**Access:**
+- API: `http://localhost:3000`
+- Health: `http://localhost:3000/health`
+- Database UI: `http://localhost:8080` (Adminer)
+
+**For detailed Docker documentation:** See [DOCKER_QUICKSTART.md](DOCKER_QUICKSTART.md) or [DOCKER.md](DOCKER.md)
+
+### Without Docker (Traditional Setup)
 
 - Node.js **>= 22.0.0**
 - PostgreSQL database (local or cloud — [Neon](https://neon.tech) / [Supabase](https://supabase.com))

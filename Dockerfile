@@ -1,22 +1,17 @@
-# Stage 1: Dependencies stage
-FROM node:22-alpine as dependencies
+# Stage 1: Build dependencies and compiled application
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
-
-# Stage 2: Build stage
-FROM node:22-alpine as builder
-WORKDIR /app
-COPY package*.json ./
 COPY prisma ./prisma
 COPY src ./src
 COPY tsconfig.json ./
-RUN npm ci
-RUN npx prisma generate --schema=./prisma/schema/schema.prisma
+COPY prisma.config.ts ./
+RUN DATABASE_URL=postgresql://localhost:5432/outsourcex npx prisma generate
 RUN npm run build
 
-# Stage 3: Production stage
-FROM node:22-alpine
+# Stage 2: Runtime dependencies and application
+FROM node:22-alpine AS production
 WORKDIR /app
 
 # Install dumb-init, curl, and netcat for healthcheck and db wait
@@ -26,11 +21,12 @@ RUN apk add --no-cache dumb-init curl netcat-openbsd
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 
-# Copy only necessary files from dependencies and builder
-COPY --from=dependencies /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
 COPY package*.json ./
+RUN npm ci --omit=dev
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/dist ./dist
+# EJS files are loaded from src/app/templates at runtime.
+COPY --from=builder /app/src/app/templates ./src/app/templates
 
 # Set environment
 ENV NODE_ENV=production

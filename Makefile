@@ -1,7 +1,7 @@
 # Use 'docker compose' instead of 'docker-compose' for compatibility
 DC = docker compose
 
-.PHONY: help dev-up dev-down dev-logs db-migrate db-push db-studio db-backup db-restore lint lint-fix format build prod-up prod-down prod-logs clean
+.PHONY: help dev-up dev-down dev-logs dev-shell dev-stripe-webhook db-generate db-migrate db-push db-studio db-backup db-restore db-shell db-seed lint lint-fix format build prod-up prod-down prod-logs clean init ps status restart rebuild
 
 help:
 	@echo "OutsourceX Docker Commands"
@@ -11,8 +11,10 @@ help:
 	@echo "  make dev-down        - Stop development environment"
 	@echo "  make dev-logs        - View development logs"
 	@echo "  make dev-shell       - Access backend container shell"
+	@echo "  make dev-stripe-webhook - Test Stripe webhook endpoint"
 	@echo ""
 	@echo "Database Commands:"
+	@echo "  make db-generate     - Generate Prisma Client"
 	@echo "  make db-migrate      - Run Prisma migrations"
 	@echo "  make db-push         - Push schema to database"
 	@echo "  make db-studio       - Open Prisma Studio"
@@ -47,6 +49,9 @@ dev-logs:
 dev-shell:
 	$(DC) exec backend sh
 
+dev-stripe-webhook:
+	stripe listen --forward-to localhost:$${APP_PORT:-3000}/webhook
+
 # Database
 db-migrate:
 	$(DC) exec backend npm run db:migrate
@@ -54,20 +59,24 @@ db-migrate:
 db-push:
 	$(DC) exec backend npm run db:push
 
+db-generate:
+	$(DC) exec backend npm run db:generate
+
 db-studio:
 	$(DC) exec backend npm run db:studio
 
 db-backup:
-	@$(DC) exec postgres pg_dump -U outsourcex_user -d outsourcex_dev > backup_$(shell date +%Y%m%d_%H%M%S).sql
-	@echo "Database backed up to backup_$(shell date +%Y%m%d_%H%M%S).sql"
+	@backup_file="backup_$$(date +%Y%m%d_%H%M%S).sql"; \
+	$(DC) exec -T postgres sh -c 'pg_dump -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' > "$$backup_file"; \
+	echo "Database backed up to $$backup_file"
 
 db-restore:
 	@read -p "Enter backup file name: " FILE; \
-	$(DC) exec -T postgres psql -U outsourcex_user -d outsourcex_dev < $$FILE; \
+	$(DC) exec -T postgres sh -c 'psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' < $$FILE; \
 	echo "Database restored from $$FILE"
 
 db-shell:
-	$(DC) exec postgres psql -U outsourcex_user -d outsourcex_dev
+	$(DC) exec postgres sh -c 'psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'
 
 # Code
 lint:

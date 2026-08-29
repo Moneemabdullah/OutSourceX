@@ -1,7 +1,7 @@
 enum PaymentStatus {
-    PENDING
-    ESCROW
-    RELEASED
-    FAILED
-    REFUNDED
+  PENDING
+  ESCROW
+  RELEASED
+  FAILED
+  REFUNDED
 }

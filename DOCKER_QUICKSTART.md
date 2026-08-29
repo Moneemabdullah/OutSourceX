@@ -15,7 +15,8 @@ docker-compose --version  # Should be 2.0+
 cp .env.example .env
 
 # Open .env and update these values for your setup:
-# - DATABASE_URL (if using custom database name)
+# - POSTGRES_USER, POSTGRES_PASSWORD, and POSTGRES_DB for the local database
+# - DATABASE_URL only when running the app outside Docker
 # - API keys (Google OAuth, Stripe, Cloudinary, etc.)
 # - SMTP credentials for email
 ```
@@ -45,10 +46,40 @@ make db-seed
 | Stop development | `make dev-down` |
 | View logs | `make dev-logs` |
 | Access backend shell | `make dev-shell` |
+| Forward Stripe webhooks | `make dev-stripe-webhook` |
 | Run database migrations | `make db-migrate` |
 | Open Prisma Studio | `make db-studio` |
 | Fix linting issues | `make lint-fix` |
 | Format code | `make format` |
+
+## Stripe webhook testing
+
+With the backend running, use separate terminals:
+
+```bash
+make dev-logs
+make dev-stripe-webhook
+stripe trigger payment_intent.succeeded
+```
+
+The Stripe CLI forwards events from the host to `http://localhost:3000/webhook`.
+
+Prisma Studio runs in the backend container at [http://localhost:51212](http://localhost:51212).
+It does not open a browser in the container.
+
+## Changing local PostgreSQL credentials or database name
+
+PostgreSQL reads `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` only
+when its data volume is first initialized. If you change any of those values in
+`.env`, reset **only disposable development data** before starting again:
+
+```bash
+docker compose down -v
+make dev-up
+make db-push
+```
+
+This deletes the local development database; never use it for production.
 
 ## Troubleshooting
 

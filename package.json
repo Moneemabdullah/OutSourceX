@@ -16,12 +16,14 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio",
+    "db:studio": "prisma studio --port 51212 --browser none",
     "admin:seed": "tsx src/app/scripts/seedSuperAdmin.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "setipe:webhook" : "stripe listen --forward-to localhost:3000/webhook"
   },
   "dependencies": {
     "@prisma/client": "^7.7.0",
+    "@prisma/adapter-pg": "^7.7.0",
     "better-auth": "^1.2.8",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -40,7 +42,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
-    "@prisma/adapter-pg": "^7.7.0",
     "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.17",
     "@types/ejs": "^3.1.5",

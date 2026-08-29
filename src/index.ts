@@ -16,6 +16,13 @@ const app: Application = express();
 app.set('view engine', 'ejs');
 app.set('views', path.resolve(process.cwd(), 'src/app/templates/'));
 
+
+app.post("/webhook", express.raw({type: "application/json"}), async (req: Request, res: Response) => {
+  
+    logger.info(`Received Stripe webhook event`);
+    res.status(200).send('Webhook received');
+});
+
 app.use(
   cors({
     origin: [envVars.FRONTEND_URL as string, envVars.BETTER_AUTH_URL as string],

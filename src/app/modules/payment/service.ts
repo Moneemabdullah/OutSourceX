@@ -8,6 +8,101 @@ import { prisma } from '../../lib/prisma';
 import { sendEmail } from '../../utils/emailService';
 import { notificationUtils } from '../../utils/notification';
 import { QueryBuilder } from '../../utils/QueryBuilder';
+import Stripe from 'stripe';
+import logger from '../../lib/logger';
+
+interface IEscrowPaymentData {
+  status: 'ESCROW';
+  transactionId: string;
+  paymentGatewayData: Prisma.InputJsonValue;
+}
+
+interface IEscrowNotification {
+  userId: string;
+  title: 'Escrow funded';
+  message: string;
+}
+
+const handleStripeWebhookEvent = async (event: Stripe.Event) => {
+  const existingPayment = await prisma.payment.findFirst({
+    where: { transactionId: event.id as string },
+  });
+  if (existingPayment) {
+    logger.error(`Payment with transactionId ${event.id} already exists. Skipping processing.`);
+    return;
+  }
+
+  switch (event.type) {
+    case 'checkout.session.completed':
+      // Handle checkout session completed event
+      {
+        const session = event.data.object as Stripe.Checkout.Session;
+
+        const contractID = session.metadata?.contractID;
+        const paymentID = session.metadata?.paymentID;
+
+        if (!contractID || !paymentID) {
+          logger.error('Missing contractID or paymentID in session metadata');
+          return;
+        }
+
+        const contract = await prisma.contract.findUnique({
+          where: { id: contractID },
+          include: {
+            client: {
+              include: {
+                user: true,
+              },
+            },
+            freelancer: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        });
+        
+        if (!contract) {
+          logger.error(`Contract with ID ${contractID} not found`);
+          return;
+        }
+        
+        await prisma.$transaction(async (tx) => {
+          await tx.payment.update({
+            where: { id: paymentID },
+            data: {
+              status: 'ESCROW',
+              transactionId: session.payment_intent as string,
+              paymentGatewayData: session as Prisma.InputJsonValue,
+            },
+          });
+
+          await notificationUtils.createNotification({
+            userId: contract.freelancer.user.id,
+            title: 'Escrow funded',
+            message: `Escrow was funded for contract "${contract.title}".`,
+          });
+        });
+
+
+      }
+      break;
+    case 'payment_intent.succeeded':
+      // Handle payment intent succeeded event
+      {}
+      break;
+    case 'checkout.session.expired':
+      // Handle checkout session expired event
+      {}  
+      break;
+    case 'payment_intent.payment_failed':
+      // Handle payment intent failed event
+      {}
+      break;
+    default:
+      logger.warn(`Unhandled Stripe event type: ${event.type}`);
+  }
+};
 
 const createEscrowPayment = async (
   user: IRequestUser,

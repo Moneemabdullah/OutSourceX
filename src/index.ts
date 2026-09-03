@@ -10,6 +10,9 @@ import { indexRoute } from './app/routes';
 import { logger } from './app/lib/logger';
 import { requestLogger } from './app/middlewares/requestLogger';
 import { globalErrorHandler } from './app/middlewares';
+import { stripe } from './app/modules/payment/service';
+import { handleStripeWebhookEvent } from './app/modules/payment/webhookHandler';
+import type { Stripe } from 'stripe';
 
 const app: Application = express();
 
@@ -18,9 +21,24 @@ app.set('views', path.resolve(process.cwd(), 'src/app/templates/'));
 
 
 app.post("/webhook", express.raw({type: "application/json"}), async (req: Request, res: Response) => {
-  
-    logger.info(`Received Stripe webhook event`);
-    res.status(200).send('Webhook received');
+  const sig = req.headers['stripe-signature'] as string;
+
+  let event: Stripe.Event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, envVars.STRIPE_.WEBHOOK_SECRET);
+  } catch (err: any) {
+    logger.error(`Webhook signature verification failed: ${err.message}`);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  try {
+    await handleStripeWebhookEvent(event);
+    res.status(200).send('Webhook processed');
+  } catch (error: any) {
+    logger.error(`Error processing webhook event: ${error.message}`);
+    res.status(500).send(`Webhook Error: ${error.message}`);
+  }
 });
 
 app.use(

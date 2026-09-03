@@ -4,7 +4,7 @@ import AppError from '../../errorHelpers/AppError';
 import catchAsync from '../../shared/catchAsync';
 import { sendResponse } from '../../shared/sendResponse';
 import { tokenUtils } from '../../utils/token';
-import { authService } from './auth.service';
+import { authService } from './service';
 
 const registerUser = catchAsync(async (req: Request, res: Response) => {
   const result = await authService.registerUser(req.body);

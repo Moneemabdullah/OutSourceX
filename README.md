@@ -251,7 +251,9 @@ make db-seed     # Create super admin (optional)
 - Health: `http://localhost:3000/health`
 - Database UI: `http://localhost:8080` (Adminer)
 
-**For detailed Docker documentation:** See [DOCKER_QUICKSTART.md](DOCKER_QUICKSTART.md) or [DOCKER.md](DOCKER.md)
+**For detailed Docker documentation:** See [docs/docker.md](docs/docker.md)
+
+**For production deployment instructions:** See [docs/deployment.md](docs/deployment.md)
 
 ### Without Docker (Traditional Setup)
 

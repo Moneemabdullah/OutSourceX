@@ -51,8 +51,26 @@ const releasePayment = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getPaymentById = catchAsync(async (req: Request, res: Response) => {
+  const { paymentId } = req.params;
+
+  if (!req.user) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'Unauthorized access');
+  }
+
+  const payment = await paymentService.getPaymentById(req.user, String(paymentId));
+
+  sendResponse(res, {
+    httpStatusCode: httpStatus.OK,
+    success: true,
+    message: 'Payment fetched successfully',
+    data: payment,
+  });
+});
+
 export const paymentController = {
   getPayments,
   createEscrowPayment,
   releasePayment,
+  getPaymentById,
 };

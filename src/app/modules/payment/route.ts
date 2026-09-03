@@ -11,6 +11,11 @@ router.get(
   CheckAuth(UserRole.CLIENT, UserRole.FREELANCER, UserRole.ADMIN, UserRole.SUPER_ADMIN),
   paymentController.getPayments
 );
+router.get(
+  '/:paymentId',
+  CheckAuth(UserRole.CLIENT, UserRole.FREELANCER, UserRole.ADMIN, UserRole.SUPER_ADMIN),
+  paymentController.getPaymentById
+);
 router.post(
   '/',
   CheckAuth(UserRole.CLIENT),

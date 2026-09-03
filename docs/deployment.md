@@ -1,17 +1,19 @@
-# 🚀 Production Deployment Guide
+# 🚀 Deployment Guide - OutsourceX
 
-## Pre-Deployment Checklist
+This guide covers production deployment of the OutsourceX backend application.
+
+## 📋 Pre-Deployment Checklist
 
 - [ ] All environment variables are set correctly in `.env.prod`
 - [ ] Database backups are configured
-- [ ] SSL/TLS certificates are ready
+- [ ] SSL/TLS certificates are ready (if using custom domain)
 - [ ] Monitoring and logging are configured
 - [ ] Secrets are stored securely (use AWS Secrets Manager, HashiCorp Vault, etc.)
-- [ ] Reverse proxy (Nginx) is configured
+- [ ] Reverse proxy (Nginx/Traefik) is configured
 - [ ] All tests pass locally
 - [ ] Code is pushed and CI/CD pipeline passes
 
-## Environment Setup
+## � Environment Setup
 
 ### Create Production .env File
 
@@ -38,49 +40,71 @@ BETTER_AUTH_URL=https://api.yourapp.com
 ACCESS_TOKEN_SECRET=your-production-access-token-secret
 REFRESH_TOKEN_SECRET=your-production-refresh-token-secret
 
-# All other production values...
+# Email Configuration (SMTP)
+EMAIL_SENDER_SMTP_HOST=smtp.example.com
+EMAIL_SENDER_SMTP_PORT=587
+EMAIL_SENDER_SMTP_USER=your-email@example.com
+EMAIL_SENDER_SMTP_PASS=your-email-password
+EMAIL_SENDER_FROM=noreply@example.com
+
+# Google OAuth
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_CALLBACK_URL=https://yourdomain.com/api/auth/callback/google
+
+# Frontend URL (CORS)
+FRONTEND_URL=https://yourdomain.com
+
+# Cloudinary (Optional)
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+
+# Stripe (Optional)
+STRIPE_SECRET_KEY=your-stripe-secret-key
+STRIPE_WEBHOOK_SECRET=your-stripe-webhook-secret
+
+# Super Admin
+SUPER_ADMIN_EMAIL=admin@yourdomain.com
+SUPER_ADMIN_PASSWORD=SecurePassword123!
 ```
 
-## Docker Image Building
+## 🐳 Docker Production Deployment
 
-### Build Optimized Production Image
+### Using Docker Compose
 
 ```bash
-# Build the production image
-docker build -t outsourcex-backend:latest .
+# Start production stack
+make prod-up
 
-# Tag for registry (e.g., Docker Hub or ECR)
-docker tag outsourcex-backend:latest myregistry/outsourcex-backend:latest
-docker tag outsourcex-backend:latest myregistry/outsourcex-backend:$(date +%Y%m%d-%H%M%S)
+# Stop production stack
+make prod-down
 
-# Push to registry
-docker push myregistry/outsourcex-backend:latest
-docker push myregistry/outsourcex-backend:$(date +%Y%m%d-%H%M%S)
+# View production logs
+make prod-logs
 ```
 
-## Deployment Strategies
-
-### 1. Single Server Deployment
+### Single Server Deployment
 
 ```bash
-# SSH into your server
+# 1. Copy production env file to server
+scp .env.prod user@your-server.com:/app/outsourcex/
+
+# 2. SSH into your server
 ssh user@your-server.com
 
-# Clone repository
+# 3. Clone repository (if not already)
 git clone https://github.com/yourusername/outsourcex.git
 cd outsourcex
 
-# Copy production env file
-scp .env.prod user@your-server.com:/app/outsourcex/
-
-# Start services
+# 3. Start services
 docker-compose -f docker-compose.prod.yml up -d
 
-# Run migrations
+# 4. Run migrations
 docker-compose -f docker-compose.prod.yml exec backend npm run db:push
 ```
 
-### 2. Docker Swarm Deployment
+### Docker Swarm Deployment
 
 ```bash
 # Initialize swarm
@@ -93,7 +117,7 @@ docker stack deploy -c docker-compose.prod.yml outsourcex
 docker stack ps outsourcex
 ```
 
-### 3. Kubernetes Deployment
+### Kubernetes Deployment
 
 See `k8s/` directory for Kubernetes manifests.
 
@@ -106,7 +130,7 @@ kubectl get pods -n outsourcex
 kubectl logs -n outsourcex -l app=backend
 ```
 
-## Reverse Proxy Setup (Nginx)
+## ⚙️ Reverse Proxy Setup (Nginx)
 
 Create `/etc/nginx/sites-available/outsourcex`:
 
@@ -141,7 +165,6 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
 
         # Timeouts
         proxy_connect_timeout 60s;
@@ -152,12 +175,13 @@ server {
 ```
 
 Enable and restart:
+
 ```bash
 sudo ln -s /etc/nginx/sites-available/outsourcex /etc/nginx/sites-enabled/
 sudo systemctl restart nginx
 ```
 
-## Database Management
+## 🗄️ Database Management
 
 ### Backup Strategy
 
@@ -174,6 +198,7 @@ find $BACKUP_DIR -type f -name "backup_*.sql.gz" -mtime +30 -delete
 ```
 
 Schedule with cron:
+
 ```bash
 0 2 * * * /usr/local/bin/backup-db.sh
 ```
@@ -184,93 +209,29 @@ Schedule with cron:
 docker-compose -f docker-compose.prod.yml exec -T postgres psql -U $POSTGRES_USER -d $POSTGRES_DB < backup_file.sql
 ```
 
-## Monitoring & Logging
+## 📊 Monitoring & Logging
 
 ### Container Logging
 
-Docker logs to JSON files with rotation:
-
 ```bash
 # View logs
-docker-compose -f docker-compose.prod.yml logs backend
+make prod-logs
 
 # Follow logs
-docker-compose -f docker-compose.prod.yml logs -f backend
+make prod-logs -f
 ```
 
 ### Health Monitoring
 
 ```bash
 # Check container health
-docker-compose -f docker-compose.prod.yml ps
+make ps
 
 # Monitor system resources
 docker stats
 ```
 
-### Application Monitoring (Optional)
-
-Setup with Prometheus:
-
-```bash
-# Docker compose file includes logging configuration
-# For advanced monitoring, integrate with ELK Stack or similar
-```
-
-## Update & Rollback Procedures
-
-### Zero-Downtime Updates
-
-```bash
-# Pull latest changes
-git pull origin main
-
-# Build new image
-docker-compose -f docker-compose.prod.yml build --no-cache
-
-# Start new containers (replaces old ones)
-docker-compose -f docker-compose.prod.yml up -d
-
-# Verify health
-curl https://api.yourapp.com/health
-```
-
-### Rollback
-
-```bash
-# Switch to previous image tag
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml up -d -f docker-compose.prod.yml
-```
-
-## Security Best Practices
-
-1. **Secrets Management:**
-   - Never commit `.env.prod` file
-   - Use environment variables from secure storage
-   - Rotate secrets regularly
-
-2. **Network Security:**
-   - Use firewall rules to restrict access
-   - Enable SSL/TLS (HTTPS only)
-   - Rate limiting on API endpoints
-
-3. **Database Security:**
-   - Strong passwords (30+ characters)
-   - Regular backups with encryption
-   - Enable database backup verification
-
-4. **Container Security:**
-   - Run containers as non-root user
-   - Use read-only file systems where possible
-   - Scan images for vulnerabilities
-
-5. **Monitoring:**
-   - Enable container logging
-   - Monitor resource usage
-   - Set up alerts for failures
-
-## Scaling
+## ⚡ Scaling
 
 ### Horizontal Scaling with Load Balancer
 
@@ -301,31 +262,62 @@ services:
     # Backend configuration
 ```
 
-## Troubleshooting
+## 🔒 Security Best Practices
+
+1. **Secrets Management**:
+   - Never commit `.env.prod` file
+   - Use environment variables from secure storage
+   - Rotate secrets regularly
+
+2. **Network Security**:
+   - Use firewall rules to restrict access
+   - Enable SSL/TLS (HTTPS only)
+   - Rate limiting on API endpoints
+
+3. **Database Security**:
+   - Strong passwords (30+ characters)
+   - Regular backups with encryption
+   - Enable database backup verification
+
+4. **Container Security**:
+   - Run containers as non-root user
+   - Use read-only file systems where possible
+   - Scan images for vulnerabilities
+
+5. **Monitoring**:
+   - Enable container logging
+   - Monitor resource usage
+   - Set up alerts for failures
+
+## ⚠️ Troubleshooting
 
 ### Container won't start
+
 ```bash
 docker-compose -f docker-compose.prod.yml logs backend
 ```
 
 ### Database connection issues
+
 ```bash
 docker-compose -f docker-compose.prod.yml exec postgres psql -U $POSTGRES_USER -c "SELECT 1;"
 ```
 
 ### High memory usage
+
 ```bash
 docker stats --no-stream
 docker system prune -a  # Clean up unused images
 ```
 
 ### Disk space issues
+
 ```bash
 docker system df
 docker image prune -a --filter "until=72h"
 ```
 
-## Maintenance
+## 📅 Maintenance
 
 ### Regular Tasks
 
@@ -345,9 +337,15 @@ docker image prune -a --filter "until=72h"
 5. Monitor logs for errors
 6. Keep rollback plan ready
 
-## Support & Documentation
+## 📞 Support & Documentation
 
 - Docker Docs: https://docs.docker.com
 - Docker Compose: https://docs.docker.com/compose
 - Prisma Docs: https://www.prisma.io/docs
 - Express Docs: https://expressjs.com
+- Code of Conduct: (link)
+
+### Related Documentation
+
+- [Docker Guide](docker.md) - Docker setup and commands
+- [README.md](README.md) - Project overview and setup

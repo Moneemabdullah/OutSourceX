@@ -49,13 +49,15 @@ const createReview = async (
       throw new AppError(403, 'You can only review after completing a contract together');
     }
 
-    const review = await prisma.review.create({
-      data: {
-        clientID: client.id,
-        freelancerID: payload.freelancerID,
-        rating: payload.rating,
-        comment: payload.comment,
-      },
+    const review = await prisma.$transaction(async (tx) => {
+      return tx.review.create({
+        data: {
+          clientID: client.id,
+          freelancerID: payload.freelancerID,
+          rating: payload.rating,
+          comment: payload.comment,
+        },
+      });
     });
 
     await notificationUtils.createNotification({

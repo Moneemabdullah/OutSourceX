@@ -1,6 +1,6 @@
 import { Prisma, UserRole } from '@prisma/client';
+import Stripe from 'stripe';
 import httpStatus from 'http-status';
-import { randomUUID } from 'node:crypto';
 import AppError from '../../errorHelpers/AppError';
 import { IQueryParams } from '../../interfaces/Query.interface';
 import { IRequestUser } from '../../interfaces/requestUser.interface';
@@ -8,101 +8,13 @@ import { prisma } from '../../lib/prisma';
 import { sendEmail } from '../../utils/emailService';
 import { notificationUtils } from '../../utils/notification';
 import { QueryBuilder } from '../../utils/QueryBuilder';
-import Stripe from 'stripe';
-import logger from '../../lib/logger';
+import { envVars } from '../../config/env.utils';
 
-interface IEscrowPaymentData {
-  status: 'ESCROW';
-  transactionId: string;
-  paymentGatewayData: Prisma.InputJsonValue;
-}
+export const stripe = new Stripe(envVars.STRIPE_.SECRET_KEY);
 
-interface IEscrowNotification {
-  userId: string;
-  title: 'Escrow funded';
-  message: string;
-}
-
-const handleStripeWebhookEvent = async (event: Stripe.Event) => {
-  const existingPayment = await prisma.payment.findFirst({
-    where: { transactionId: event.id as string },
-  });
-  if (existingPayment) {
-    logger.error(`Payment with transactionId ${event.id} already exists. Skipping processing.`);
-    return;
-  }
-
-  switch (event.type) {
-    case 'checkout.session.completed':
-      // Handle checkout session completed event
-      {
-        const session = event.data.object as Stripe.Checkout.Session;
-
-        const contractID = session.metadata?.contractID;
-        const paymentID = session.metadata?.paymentID;
-
-        if (!contractID || !paymentID) {
-          logger.error('Missing contractID or paymentID in session metadata');
-          return;
-        }
-
-        const contract = await prisma.contract.findUnique({
-          where: { id: contractID },
-          include: {
-            client: {
-              include: {
-                user: true,
-              },
-            },
-            freelancer: {
-              include: {
-                user: true,
-              },
-            },
-          },
-        });
-        
-        if (!contract) {
-          logger.error(`Contract with ID ${contractID} not found`);
-          return;
-        }
-        
-        await prisma.$transaction(async (tx) => {
-          await tx.payment.update({
-            where: { id: paymentID },
-            data: {
-              status: 'ESCROW',
-              transactionId: session.payment_intent as string,
-              paymentGatewayData: session as Prisma.InputJsonValue,
-            },
-          });
-
-          await notificationUtils.createNotification({
-            userId: contract.freelancer.user.id,
-            title: 'Escrow funded',
-            message: `Escrow was funded for contract "${contract.title}".`,
-          });
-        });
-
-
-      }
-      break;
-    case 'payment_intent.succeeded':
-      // Handle payment intent succeeded event
-      {}
-      break;
-    case 'checkout.session.expired':
-      // Handle checkout session expired event
-      {}  
-      break;
-    case 'payment_intent.payment_failed':
-      // Handle payment intent failed event
-      {}
-      break;
-    default:
-      logger.warn(`Unhandled Stripe event type: ${event.type}`);
-  }
-};
+// Stripe webhook handling now lives in ./payment.webhook.ts — wire your
+// webhook route to `handleStripeWebhookEvent` from that file directly rather
+// than through this service.
 
 const createEscrowPayment = async (
   user: IRequestUser,
@@ -166,20 +78,45 @@ const createEscrowPayment = async (
     throw new AppError(httpStatus.CONFLICT, 'Escrow has already been funded with this amount');
   }
 
+  // Create Stripe PaymentIntent
+  const stripePaymentIntent = await stripe.paymentIntents.create({
+    amount: Math.round(payload.amount * 100), // Convert to cents
+    currency: 'usd',
+    metadata: {
+      contractID: payload.contractID,
+      paymentID: payload.contractID, // Use contractID as payment identifier
+    },
+    automatic_payment_methods: {
+      enabled: true,
+    },
+  });
+
   const payment = await prisma.payment.upsert({
     where: { contractID: payload.contractID },
     update: {
       amount: payload.amount,
-      status: 'ESCROW',
-      transactionId: randomUUID(),
-      paymentGatewayData: payload.paymentGatewayData as Prisma.InputJsonValue | undefined,
+      status: 'PENDING',
+      stripePaymentIntentId: stripePaymentIntent.id,
+      transactionId: stripePaymentIntent.id,
+      paymentGatewayData: {
+        ...payload.paymentGatewayData,
+        stripePaymentIntentId: stripePaymentIntent.id,
+        amount: payload.amount,
+        currency: 'usd',
+      } as Prisma.InputJsonValue,
     },
     create: {
       contractID: payload.contractID,
       amount: payload.amount,
-      status: 'ESCROW',
-      transactionId: randomUUID(),
-      paymentGatewayData: payload.paymentGatewayData as Prisma.InputJsonValue | undefined,
+      status: 'PENDING',
+      stripePaymentIntentId: stripePaymentIntent.id,
+      transactionId: stripePaymentIntent.id,
+      paymentGatewayData: {
+        stripePaymentIntentId: stripePaymentIntent.id,
+        amount: payload.amount,
+        currency: 'usd',
+        ...payload.paymentGatewayData,
+      } as Prisma.InputJsonValue,
     },
   });
 
@@ -352,7 +289,45 @@ const getPayments = async (user: IRequestUser, query: IQueryParams) => {
     .execute();
 };
 
+const getPaymentById = async (user: IRequestUser, paymentId: string) => {
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId },
+    include: {
+      contract: {
+        include: {
+          job: true,
+          client: {
+            include: {
+              user: true,
+            },
+          },
+          freelancer: {
+            include: {
+              user: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!payment) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Payment not found');
+  }
+
+  // Check authorization: user must be associated with the payment's contract
+  const isClient = payment.contract.client.user.id === user.userId;
+  const isFreelancer = payment.contract.freelancer.user.id === user.userId;
+
+  if (!isClient && !isFreelancer) {
+    throw new AppError(httpStatus.FORBIDDEN, 'You do not have access to this payment');
+  }
+
+  return payment;
+};
+
 export const paymentService = {
+  getPaymentById,
   getPayments,
   createEscrowPayment,
   releasePayment,

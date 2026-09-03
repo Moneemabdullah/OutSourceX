@@ -1,7 +1,7 @@
 import { UserRole } from '@prisma/client';
 import { Router } from 'express';
 import { CheckAuth, validateRequest } from '../../middlewares';
-import { authController } from './auth.controller';
+import { authController } from './controller';
 import { authValidation } from './validation';
 
 const router = Router();
